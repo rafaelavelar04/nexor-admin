@@ -1,9 +1,10 @@
 import { useSession } from "@/contexts/SessionContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-const Index = () => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useSession();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -13,11 +14,11 @@ const Index = () => {
     );
   }
 
-  if (session) {
-    return <Navigate to="/admin/dashboard" replace />;
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  return <>{children}</>;
 };
 
-export default Index;
+export default ProtectedRoute;
