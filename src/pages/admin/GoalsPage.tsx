@@ -25,7 +25,7 @@ const GoalsPage = () => {
     queryFn: async () => {
       const { data: goals, error: goalsError } = await supabase
         .from('goals')
-        .select('*, profiles(full_name)')
+        .select('*, profiles!responsavel_id(full_name)')
         .order('ano', { ascending: false })
         .order('mes', { ascending: false });
       if (goalsError) throw goalsError;
