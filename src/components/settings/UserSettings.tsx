@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { User, UsersTableColumns } from '@/components/users/UsersTableColumns';
 import { DataTable } from '@/components/users/UsersDataTable';
 import {
@@ -17,14 +17,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CreateUserDialog } from '@/components/users/CreateUserDialog';
 
 const UserSettings = () => {
-  const { user: currentUser } = useSession();
+  const { user: currentUser, profile } = useSession();
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
 
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isAdmin = profile?.role === 'admin';
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -87,34 +92,51 @@ const UserSettings = () => {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Gerenciamento de Usuários</CardTitle>
-        <CardDescription>Gerencie os acessos e permissões da sua equipe.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading && <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
-        {error && <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error}</div>}
-        {!isLoading && !error && <DataTable columns={columns} data={users} />}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <CardTitle>Gerenciamento de Usuários</CardTitle>
+              <CardDescription>Gerencie os acessos e permissões da sua equipe.</CardDescription>
+            </div>
+            {isAdmin && (
+              <Button onClick={() => setIsCreateUserOpen(true)}>
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Novo Usuário
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading && <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
+          {error && <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error}</div>}
+          {!isLoading && !error && <DataTable columns={columns} data={users} />}
 
-        <AlertDialog open={!!userToDeactivate} onOpenChange={() => setUserToDeactivate(null)}>
-          <AlertDialogContent className="bg-card border-border">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDeactivation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Desativar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
+          <AlertDialog open={!!userToDeactivate} onOpenChange={() => setUserToDeactivate(null)}>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeactivation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Desativar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
+      <CreateUserDialog
+        isOpen={isCreateUserOpen}
+        onClose={() => setIsCreateUserOpen(false)}
+        onUserCreated={fetchUsers}
+      />
+    </>
   );
 };
 
