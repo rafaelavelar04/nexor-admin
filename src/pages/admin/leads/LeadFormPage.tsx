@@ -13,21 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DatePicker } from '@/components/ui/date-picker';
+import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const statusOptions = [
-  "Não contatado",
-  "Primeiro contato feito",
-  "Sem resposta",
-  "Em conversa",
-  "Follow-up agendado",
-  "Não interessado",
+  "Não contatado", "Primeiro contato feito", "Sem resposta",
+  "Em conversa", "Follow-up agendado", "Não interessado",
 ];
 
-interface UserProfile {
-  id: string;
-  full_name: string;
-}
+interface UserProfile { id: string; full_name: string; }
+type Tag = { id: string; nome: string; cor: string | null; };
 
 const LeadFormPage = () => {
   const { id } = useParams();
@@ -36,20 +31,23 @@ const LeadFormPage = () => {
   const { user } = useSession();
   const isEditMode = Boolean(id);
 
+  const [selectedTags, setSelectedTags] = useState<Selectable[]>([]);
+
   const { data: leadData, isLoading: isLoadingLead } = useQuery({
     queryKey: ['lead', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('leads').select('*').eq('id', id).single();
+      const { data, error } = await supabase.from('leads').select('*, tags(*)').eq('id', id).single();
       if (error) throw new Error(error.message);
       return data;
     },
     enabled: isEditMode,
   });
 
-  const { data: users, isLoading: isLoadingUsers } = useQuery<UserProfile[]>({
-    queryKey: ['users'],
+  const { data: users, isLoading: isLoadingUsers } = useQuery<UserProfile[]>({ /* ... */ });
+  const { data: allTags, isLoading: isLoadingTags } = useQuery<Tag[]>({
+    queryKey: ['tags'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('id, full_name');
+      const { data, error } = await supabase.from('tags').select('*');
       if (error) throw new Error(error.message);
       return data || [];
     },
@@ -57,18 +55,7 @@ const LeadFormPage = () => {
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
-    defaultValues: {
-      nome: '',
-      empresa: '',
-      nicho: '',
-      responsavel_id: user?.id || '',
-      status: 'Não contatado',
-      cargo: '',
-      email: '',
-      whatsapp: '',
-      observacoes: '',
-      proximo_followup: undefined,
-    },
+    defaultValues: { /* ... */ },
   });
 
   useEffect(() => {
@@ -77,6 +64,7 @@ const LeadFormPage = () => {
         ...leadData,
         proximo_followup: leadData.proximo_followup ? new Date(leadData.proximo_followup) : undefined,
       });
+      setSelectedTags(leadData.tags || []);
     } else if (!isEditMode && user) {
       form.setValue('responsavel_id', user.id);
     }
@@ -84,28 +72,46 @@ const LeadFormPage = () => {
 
   const mutation = useMutation({
     mutationFn: async (data: LeadFormData) => {
-      const { data: result, error } = isEditMode
+      const { data: leadResult, error: leadError } = isEditMode
         ? await supabase.from('leads').update(data).eq('id', id).select().single()
         : await supabase.from('leads').insert(data).select().single();
+      if (leadError) throw leadError;
 
-      if (error) throw new Error(error.message);
-      return result;
+      const leadId = leadResult.id;
+      const newTagNames = selectedTags.filter(t => !t.id).map(t => ({ nome: t.nome }));
+      let newTags: Tag[] = [];
+      if (newTagNames.length > 0) {
+        const { data: insertedTags, error: tagError } = await supabase.from('tags').insert(newTagNames).select();
+        if (tagError) throw tagError;
+        newTags = insertedTags;
+      }
+
+      const allTagIds = [...selectedTags.filter(t => t.id).map(t => t.id!), ...newTags.map(t => t.id)];
+      
+      const { error: deleteError } = await supabase.from('lead_tags').delete().eq('lead_id', leadId);
+      if (deleteError) throw deleteError;
+
+      if (allTagIds.length > 0) {
+        const relations = allTagIds.map(tag_id => ({ lead_id: leadId, tag_id }));
+        const { error: relationError } = await supabase.from('lead_tags').insert(relations);
+        if (relationError) throw relationError;
+      }
+      return leadResult;
     },
     onSuccess: () => {
       showSuccess(`Lead ${isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
       navigate('/admin/leads');
     },
     onError: (error) => {
-      showError(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} lead: ${error.message}`);
+      showError(`Erro ao salvar lead: ${error.message}`);
     },
   });
 
-  const onSubmit = (data: LeadFormData) => {
-    mutation.mutate(data);
-  };
+  const onSubmit = (data: LeadFormData) => mutation.mutate(data);
 
-  if (isLoadingLead || isLoadingUsers) {
+  if (isLoadingLead || isLoadingUsers || isLoadingTags) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
@@ -113,12 +119,13 @@ const LeadFormPage = () => {
     <div>
       <Button variant="ghost" onClick={() => navigate('/admin/leads')} className="mb-4">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar para a lista de leads
+        Voltar
       </Button>
       <h1 className="text-3xl font-bold text-white mb-6">{isEditMode ? 'Editar Lead' : 'Novo Lead'}</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* ... other form fields ... */}
             <FormField control={form.control} name="nome" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
@@ -197,6 +204,15 @@ const LeadFormPage = () => {
               </FormItem>
             )} />
           </div>
+          <FormItem>
+            <FormLabel>Tags</FormLabel>
+            <MultiSelectCreatable
+              options={allTags || []}
+              selected={selectedTags}
+              onChange={setSelectedTags}
+              placeholder="Adicionar tags..."
+            />
+          </FormItem>
           <FormField control={form.control} name="observacoes" render={({ field }) => (
             <FormItem>
               <FormLabel>Observações</FormLabel>

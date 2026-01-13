@@ -11,37 +11,24 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { useNavigate } from "react-router-dom"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { PlusCircle, Check } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, Header, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
 }
+
+type Tag = { id: string; nome: string; };
 
 export function LeadsDataTable<TData, TValue>({
   columns,
@@ -50,6 +37,15 @@ export function LeadsDataTable<TData, TValue>({
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const navigate = useNavigate();
+
+  const { data: tags } = useQuery<Tag[]>({
+    queryKey: ['tags'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('tags').select('id, nome');
+      if (error) throw new Error(error.message);
+      return data || [];
+    }
+  });
 
   const table = useReactTable({
     data,
@@ -71,9 +67,11 @@ export function LeadsDataTable<TData, TValue>({
     "Em conversa", "Follow-up agendado", "Não interessado"
   ];
 
+  const selectedTagIds = (table.getColumn("tags")?.getFilterValue() as Set<string>) ?? new Set();
+
   return (
     <div>
-      <div className="flex items-center justify-between py-4">
+      <div className="flex items-center justify-between py-4 gap-2 flex-wrap">
         <Input
           placeholder="Filtrar por nome ou empresa..."
           value={(table.getColumn("nome_empresa")?.getFilterValue() as string) ?? ""}
@@ -83,6 +81,46 @@ export function LeadsDataTable<TData, TValue>({
           className="max-w-sm bg-gray-800 border-gray-700"
         />
         <div className="flex items-center space-x-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="bg-gray-800 border-gray-700">
+                Tags {selectedTagIds.size > 0 && `(${selectedTagIds.size})`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-0" align="end">
+              <Command>
+                <CommandInput placeholder="Buscar tags..." />
+                <CommandList>
+                  <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
+                  <CommandGroup>
+                    {tags?.map((tag) => {
+                      const isSelected = selectedTagIds.has(tag.id);
+                      return (
+                        <CommandItem
+                          key={tag.id}
+                          onSelect={() => {
+                            const newSet = new Set(selectedTagIds);
+                            if (isSelected) {
+                              newSet.delete(tag.id);
+                            } else {
+                              newSet.add(tag.id);
+                            }
+                            table.getColumn("tags")?.setFilterValue(newSet.size > 0 ? newSet : undefined);
+                          }}
+                        >
+                          <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                            <Check className={cn("h-4 w-4")} />
+                          </div>
+                          <span>{tag.nome}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
           <Select
             value={(table.getColumn("status")?.getFilterValue() as string) ?? ""}
             onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? "" : value)}

@@ -11,9 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+type Tag = {
+  id: string;
+  nome: string;
+  cor: string | null;
+}
 
 export type Lead = {
   id: string
@@ -25,6 +32,7 @@ export type Lead = {
   proximo_followup: string | null
   created_at: string
   profile: { full_name: string } | null
+  tags: Tag[]
 }
 
 export const getColumns = (
@@ -39,13 +47,24 @@ export const getColumns = (
     header: "Empresa",
   },
   {
-    accessorKey: "nicho",
-    header: "Nicho",
-  },
-  {
-    accessorKey: "profile.full_name",
-    header: "Responsável",
-    cell: ({ row }) => row.original.profile?.full_name || 'N/A',
+    accessorKey: "tags",
+    header: "Tags",
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-1">
+        {row.original.tags?.map(tag => (
+          <Badge key={tag.id} variant="secondary" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+            {tag.nome}
+          </Badge>
+        ))}
+      </div>
+    ),
+    filterFn: (row, columnId, filterValue: Set<string>) => {
+      if (!filterValue || filterValue.size === 0) return true;
+      const rowTags = row.original.tags;
+      if (!rowTags || rowTags.length === 0) return false;
+      return rowTags.some(tag => filterValue.has(tag.id));
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "status",
@@ -67,24 +86,6 @@ export const getColumns = (
     cell: ({ row }) => {
       const date = row.getValue("proximo_followup")
       return date ? format(new Date(date as string), "dd/MM/yyyy") : "N/A"
-    },
-  },
-  {
-    accessorKey: "created_at",
-    header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Data de Criação
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-    cell: ({ row }) => {
-      const date = row.getValue("created_at")
-      return format(new Date(date as string), "dd/MM/yyyy", { locale: ptBR })
     },
   },
   {

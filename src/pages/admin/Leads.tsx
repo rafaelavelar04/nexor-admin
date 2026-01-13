@@ -16,13 +16,13 @@ const LeadsPage = () => {
         .from('leads')
         .select(`
           *,
-          profile:profiles(full_name)
+          profile:profiles(full_name),
+          tags(*)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw new Error(error.message);
       
-      // Supabase returns an array for the relation, so we flatten it
       return data.map(lead => ({
         ...lead,
         profile: Array.isArray(lead.profile) ? lead.profile[0] : lead.profile,
