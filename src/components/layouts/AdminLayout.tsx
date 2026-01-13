@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   UserCog,
+  Target,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -28,6 +29,7 @@ const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Leads", href: "/admin/leads", icon: Users },
   { name: "Oportunidades", href: "/admin/opportunities", icon: Briefcase },
+  { name: "Metas", href: "/admin/metas", icon: Target },
   { name: "Empresas", href: "/admin/companies", icon: Building },
   { name: "Atividades", href: "/admin/activities", icon: ClipboardList },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart },
