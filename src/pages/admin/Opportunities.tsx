@@ -5,6 +5,7 @@ import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '
 import { SortableContext } from '@dnd-kit/sortable';
 import { PipelineColumn, Stage } from '@/components/opportunities/PipelineColumn';
 import { Opportunity } from '@/components/opportunities/OpportunityCard';
+import { WinLossConfirmationModal } from '@/components/opportunities/WinLossConfirmationModal';
 import { Loader2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
@@ -16,6 +17,11 @@ const Opportunities = () => {
   const { profile } = useSession();
   const [stages, setStages] = useState<Stage[]>([]);
   const [opportunities, setOpportunities] = useState<FullOpportunity[]>([]);
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    opportunity: FullOpportunity | null;
+    targetStage: Stage | null;
+  }>({ isOpen: false, opportunity: null, targetStage: null });
 
   const { isLoading: isLoadingStages, isError: isErrorStages } = useQuery({
     queryKey: ['pipelineStages'],
@@ -40,9 +46,9 @@ const Opportunities = () => {
           responsavel:profiles(full_name),
           lead:leads(nome, empresa)
         `);
-        // RLS handles filtering, no need for .eq('status', 'open') here for all roles
       if (error) throw new Error(error.message);
-      setOpportunities(data || []);
+      // Filter for open opportunities on the client side to keep the view clean
+      setOpportunities(data?.filter(o => o.status === 'open') || []);
       return data;
     },
   });
@@ -56,12 +62,12 @@ const Opportunities = () => {
       const { error } = await supabase.from('opportunities').update(updateData).eq('id', id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
-      showSuccess('Oportunidade atualizada!');
+    onSuccess: (_, variables) => {
+      showSuccess(`Oportunidade ${variables.status === 'won' ? 'ganha' : variables.status === 'lost' ? 'perdida' : 'movida'}!`);
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
     },
     onError: (error) => {
-      showError(`Erro ao mover oportunidade: ${error.message}`);
+      showError(`Erro ao atualizar oportunidade: ${error.message}`);
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
     },
   });
@@ -81,35 +87,29 @@ const Opportunities = () => {
 
     if (newStageId === originalStageId) return;
 
-    setOpportunities(prev => {
-      return prev.map(opp => 
-        opp.id === opportunityId ? { ...opp, pipeline_stage_id: newStageId } : opp
-      );
-    });
-
+    const opportunity = opportunities.find(o => o.id === opportunityId);
     const targetStage = stages.find(s => s.id === newStageId);
-    let status;
-    let closed_at: string | null = null;
 
-    if (targetStage?.nome === 'Ganho') {
-      status = 'won';
-      closed_at = new Date().toISOString();
-    } else if (targetStage?.nome === 'Perdido') {
-      status = 'lost';
-      closed_at = new Date().toISOString();
+    if (!opportunity || !targetStage) return;
+
+    if (targetStage.nome === 'Ganho' || targetStage.nome === 'Perdido') {
+      setModalState({ isOpen: true, opportunity, targetStage });
+    } else {
+      setOpportunities(prev => prev.map(opp => opp.id === opportunityId ? { ...opp, pipeline_stage_id: newStageId } : opp));
+      updateOpportunityMutation.mutate({ id: opportunityId, stageId: newStageId });
     }
-
-    updateOpportunityMutation.mutate({ id: opportunityId, stageId: newStageId, status, closed_at });
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    })
-  );
+  const handleConfirmWinLoss = () => {
+    if (!modalState.opportunity || !modalState.targetStage) return;
+    const { opportunity, targetStage } = modalState;
+    const status = targetStage.nome === 'Ganho' ? 'won' : 'lost';
+    const closed_at = new Date().toISOString();
+    updateOpportunityMutation.mutate({ id: opportunity.id, stageId: targetStage.id, status, closed_at });
+    setModalState({ isOpen: false, opportunity: null, targetStage: null });
+  };
 
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
   if (isLoadingStages || isLoadingOpps) {
@@ -136,6 +136,16 @@ const Opportunities = () => {
           </SortableContext>
         </DndContext>
       </div>
+      {modalState.opportunity && modalState.targetStage && (
+        <WinLossConfirmationModal
+          isOpen={modalState.isOpen}
+          onClose={() => setModalState({ isOpen: false, opportunity: null, targetStage: null })}
+          onConfirm={handleConfirmWinLoss}
+          isConfirming={updateOpportunityMutation.isPending}
+          opportunityTitle={modalState.opportunity.titulo}
+          targetStageName={modalState.targetStage.nome as "Ganho" | "Perdido"}
+        />
+      )}
     </div>
   );
 };
