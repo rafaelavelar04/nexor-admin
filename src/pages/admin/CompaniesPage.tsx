@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getColumns, Company } from '@/components/companies/CompaniesTableColumns';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable'; // Reusing the data table component
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Building } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const CompaniesPage = () => {
   const queryClient = useQueryClient();
@@ -47,14 +48,27 @@ const CompaniesPage = () => {
   };
 
   const columns = useMemo(() => getColumns(handleDelete, profile?.role), [profile?.role]);
+  const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  }
-
-  if (isError) {
-    return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">Erro ao carregar as empresas.</div>;
-  }
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+    if (isError) {
+      return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">Erro ao carregar as empresas.</div>;
+    }
+    if (!companies || companies.length === 0) {
+      return (
+        <EmptyState
+          icon={<Building className="w-12 h-12" />}
+          title="Nenhuma empresa cadastrada"
+          description="Cadastre empresas para associá-las a leads e oportunidades, centralizando as informações."
+          cta={canManage ? { text: "Nova Empresa", onClick: () => navigate('/admin/companies/novo') } : undefined}
+        />
+      );
+    }
+    return <LeadsDataTable columns={columns} data={companies} />;
+  };
 
   return (
     <div className="space-y-6">
@@ -63,13 +77,15 @@ const CompaniesPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Empresas</h1>
           <p className="text-muted-foreground mt-1">Gerencie sua base de contas e clientes.</p>
         </div>
-        <Button onClick={() => navigate('/admin/companies/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Nova Empresa
-        </Button>
+        {canManage && (
+          <Button onClick={() => navigate('/admin/companies/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Nova Empresa
+          </Button>
+        )}
       </div>
       
-      <LeadsDataTable columns={columns} data={companies || []} />
+      {renderContent()}
     </div>
   );
 };

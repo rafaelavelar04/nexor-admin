@@ -4,12 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable';
 import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -92,6 +93,26 @@ const LeadsPage = () => {
 
   const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
 
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+    if (error) {
+      return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro ao carregar os leads:</strong> {error}</div>;
+    }
+    if (leads.length === 0) {
+      return (
+        <EmptyState
+          icon={<Users className="w-12 h-12" />}
+          title="Nenhum lead encontrado"
+          description="Comece a prospectar e adicione seu primeiro lead para visualizá-lo aqui."
+          cta={canManage ? { text: "Novo Lead", onClick: () => navigate('/admin/leads/novo') } : undefined}
+        />
+      );
+    }
+    return <LeadsDataTable columns={columns} data={leads} />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -107,17 +128,7 @@ const LeadsPage = () => {
         )}
       </div>
       
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">
-          <strong>Erro ao carregar os leads:</strong> {error}
-        </div>
-      ) : (
-        <LeadsDataTable columns={columns} data={leads} />
-      )}
+      {renderContent()}
 
       <ConvertLeadModal
         isOpen={isModalOpen}

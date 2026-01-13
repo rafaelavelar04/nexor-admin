@@ -6,11 +6,13 @@ import { SortableContext } from '@dnd-kit/sortable';
 import { PipelineColumn, Stage } from '@/components/opportunities/PipelineColumn';
 import { Opportunity } from '@/components/opportunities/OpportunityCard';
 import { WinLossConfirmationModal } from '@/components/opportunities/WinLossConfirmationModal';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Briefcase } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { exportToCsv } from '@/lib/exportUtils';
+import { EmptyState } from '@/components/common/EmptyState';
+import { useNavigate } from 'react-router-dom';
 
 type FullOpportunity = Opportunity & { 
   pipeline_stage_id: string;
@@ -20,6 +22,7 @@ type FullOpportunity = Opportunity & {
 
 const Opportunities = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { profile } = useSession();
   const [stages, setStages] = useState<Stage[]>([]);
   const [opportunities, setOpportunities] = useState<FullOpportunity[]>([]);
@@ -149,19 +152,31 @@ const Opportunities = () => {
           Exportar Pipeline
         </Button>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        <DndContext sensors={sensors} onDragEnd={onDragEnd} disabled={!canManage}>
-          <SortableContext items={stagesIds}>
-            {stages.map((stage) => (
-              <PipelineColumn
-                key={stage.id}
-                stage={stage}
-                opportunities={opportunities.filter((opp) => opp.pipeline_stage_id === stage.id)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-      </div>
+      {opportunities.length === 0 ? (
+        <EmptyState
+          icon={<Briefcase className="w-12 h-12" />}
+          title="Seu pipeline está vazio"
+          description="Oportunidades são criadas a partir de leads qualificados. Converta um lead para começar a gerenciar seu pipeline de vendas."
+          cta={{
+            text: "Ver Leads",
+            onClick: () => navigate('/admin/leads'),
+          }}
+        />
+      ) : (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          <DndContext sensors={sensors} onDragEnd={onDragEnd} disabled={!canManage}>
+            <SortableContext items={stagesIds}>
+              {stages.map((stage) => (
+                <PipelineColumn
+                  key={stage.id}
+                  stage={stage}
+                  opportunities={opportunities.filter((opp) => opp.pipeline_stage_id === stage.id)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        </div>
+      )}
       {modalState.opportunity && modalState.targetStage && (
         <WinLossConfirmationModal
           isOpen={modalState.isOpen}

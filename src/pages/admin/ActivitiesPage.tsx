@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Activity, getColumns } from '@/components/activities/ActivitiesTableColumns';
 import { ActivitiesDataTable } from '@/components/activities/ActivitiesDataTable';
 import { ActivityFormDialog } from '@/components/activities/ActivityFormDialog';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const ActivitiesPage = () => {
   const { profile } = useSession();
@@ -33,25 +34,28 @@ const ActivitiesPage = () => {
   };
 
   const columns = getColumns({ onEdit: handleEdit, role: profile?.role });
+  const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
   const renderContent = () => {
     if (isLoading) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
-    if (isError || !activities || activities.length === 0) {
+    if (isError) {
+        return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">Erro ao carregar as atividades.</div>;
+    }
+
+    if (!activities || activities.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-lg text-center p-4">
-          <ClipboardList className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground">Nenhuma atividade encontrada</h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Comece registrando uma nova interação para visualizá-la aqui.
-          </p>
-          <Button onClick={() => setIsFormOpen(true)} className="mt-4">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Criar Primeira Atividade
-          </Button>
-        </div>
+        <EmptyState
+          icon={<ClipboardList className="w-12 h-12" />}
+          title="Nenhuma atividade encontrada"
+          description="Comece registrando uma nova interação para visualizá-la aqui."
+          cta={canManage ? {
+            text: "Criar Primeira Atividade",
+            onClick: () => setIsFormOpen(true),
+          } : undefined}
+        />
       );
     }
     
@@ -65,10 +69,12 @@ const ActivitiesPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Atividades</h1>
           <p className="text-muted-foreground mt-1">Registre e acompanhe todas as interações.</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Nova Atividade
-        </Button>
+        {canManage && (
+          <Button onClick={() => setIsFormOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Nova Atividade
+          </Button>
+        )}
       </div>
 
       {renderContent()}

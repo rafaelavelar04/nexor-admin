@@ -6,6 +6,7 @@ import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { GoalFormDialog } from '@/components/goals/GoalFormDialog';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export type Goal = {
   id: string;
@@ -100,11 +101,15 @@ const GoalsPage = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-lg">
-          <Target className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground">Nenhuma meta definida</h3>
-          <p className="text-muted-foreground text-sm">Crie a primeira meta para começar o acompanhamento.</p>
-        </div>
+        <EmptyState
+          icon={<Target className="w-12 h-12" />}
+          title="Nenhuma meta definida"
+          description="Crie a primeira meta para sua equipe e comece a acompanhar o desempenho comercial."
+          cta={canManage ? {
+            text: "Criar Primeira Meta",
+            onClick: () => setIsFormOpen(true),
+          } : undefined}
+        />
       )}
 
       <GoalFormDialog isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
