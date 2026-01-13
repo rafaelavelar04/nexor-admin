@@ -24,36 +24,6 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user);
-      }
-      setLoading(false);
-    };
-
-    getSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setLoading(true);
-        await fetchProfile(session.user);
-        setLoading(false);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
   const fetchProfile = async (user: User) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -69,15 +39,73 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
 
     if (error) {
       console.error("Error fetching profile:", error);
-    } else if (data) {
+      // Throw the error to be caught by the calling function's catch block
+      throw error;
+    }
+
+    if (data) {
       const roles = data.user_roles.map((ur: any) => ur.roles.name);
       setProfile({
         full_name: data.full_name,
         avatar_url: data.avatar_url,
         roles: roles,
       });
+    } else {
+      // This case might happen if a user exists in auth but not in profiles
+      setProfile(null);
     }
   };
+
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchProfile(session.user);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error("Error initializing session:", error);
+        // Clear state on error
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        // This will always run, ensuring the loading spinner is removed
+        setLoading(false);
+      }
+    };
+
+    initializeSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // We don't want a full-page loader on every auth change, 
+        // but we can handle profile fetching in the background.
+        try {
+          await fetchProfile(session.user);
+        } catch (error) {
+          // Error is already logged in fetchProfile, just clear the profile
+          setProfile(null);
+        }
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const logout = async () => {
     await supabase.auth.signOut();
