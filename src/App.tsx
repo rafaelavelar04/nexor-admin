@@ -10,7 +10,8 @@ import { SessionProvider } from "./contexts/SessionContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminLayout from "./components/layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
-import Leads from "./pages/admin/Leads";
+import LeadsPage from "./pages/admin/Leads";
+import LeadFormPage from "./pages/admin/leads/LeadFormPage";
 import Opportunities from "./pages/admin/Opportunities";
 import Settings from "./pages/admin/Settings";
 
@@ -36,7 +37,9 @@ const App = () => (
             >
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="leads" element={<Leads />} />
+              <Route path="leads" element={<LeadsPage />} />
+              <Route path="leads/novo" element={<LeadFormPage />} />
+              <Route path="leads/:id" element={<LeadFormPage />} />
               <Route path="opportunities" element={<Opportunities />} />
               <Route path="settings" element={<Settings />} />
               {/* Placeholder routes for other sections */}
