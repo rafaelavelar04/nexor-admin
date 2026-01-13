@@ -12,7 +12,6 @@ import {
   LogOut,
   Menu,
   X,
-  UserCog,
   Target,
 } from "lucide-react";
 import { useState } from "react";
@@ -36,7 +35,6 @@ const navItems = [
 ];
 
 const settingsNavItems = [
-    { name: "Usuários", href: "/admin/users", icon: UserCog },
     { name: "Configurações", href: "/admin/settings", icon: Settings },
 ]
 

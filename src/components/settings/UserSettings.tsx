@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { User, UsersTableColumns } from '@/components/users/UsersTableColumns';
 import { DataTable } from '@/components/users/UsersDataTable';
 import {
@@ -16,9 +16,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { showSuccess, showError } from '@/utils/toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const UsersPage = () => {
-  const { profile, user: currentUser } = useSession();
+const UserSettings = () => {
+  const { user: currentUser } = useSession();
   const queryClient = useQueryClient();
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
 
@@ -29,7 +30,6 @@ const UsersPage = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: profile?.role === 'admin',
   });
 
   const updateUserMutation = useMutation({
@@ -67,16 +67,6 @@ const UsersPage = () => {
     }
   };
 
-  if (profile?.role !== 'admin') {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-yellow-400 bg-yellow-500/10 p-6 rounded-md">
-        <ShieldAlert className="w-12 h-12 mb-4" />
-        <h2 className="text-xl font-bold mb-2 text-white">Acesso Negado</h2>
-        <p className="text-center text-yellow-300">Você não tem permissão para acessar esta página.</p>
-      </div>
-    );
-  }
-
   const columns = UsersTableColumns({
     onRoleChange: handleRoleChange,
     onStatusChange: handleStatusChange,
@@ -84,34 +74,35 @@ const UsersPage = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Gestão de Usuários</h1>
-        <p className="text-muted-foreground mt-1">Gerencie os acessos e permissões da sua equipe.</p>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Gerenciamento de Usuários</CardTitle>
+        <CardDescription>Gerencie os acessos e permissões da sua equipe.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading && <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
+        {isError && <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error.message}</div>}
+        {users && <DataTable columns={columns} data={users} />}
 
-      {isLoading && <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}
-      {isError && <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error.message}</div>}
-      {users && <DataTable columns={columns} data={users} />}
-
-      <AlertDialog open={!!userToDeactivate} onOpenChange={() => setUserToDeactivate(null)}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeactivation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Desativar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <AlertDialog open={!!userToDeactivate} onOpenChange={() => setUserToDeactivate(null)}>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeactivation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Desativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
   );
 };
 
-export default UsersPage;
+export default UserSettings;

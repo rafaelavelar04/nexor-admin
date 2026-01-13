@@ -14,8 +14,7 @@ import LeadsPage from "./pages/admin/Leads";
 import LeadFormPage from "./pages/admin/leads/LeadFormPage";
 import Opportunities from "./pages/admin/Opportunities";
 import OpportunityDetailPage from "./pages/admin/opportunities/OpportunityDetailPage";
-import UsersPage from "./pages/admin/UsersPage";
-import Settings from "./pages/admin/Settings";
+import SettingsPage from "./pages/admin/Settings";
 import GoalsPage from "./pages/admin/GoalsPage";
 
 const queryClient = new QueryClient();
@@ -40,8 +39,7 @@ const App = () => (
                 <Route path="leads/:id" element={<LeadFormPage />} />
                 <Route path="opportunities" element={<Opportunities />} />
                 <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="settings" element={<Settings />} />
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="metas" element={<GoalsPage />} />
                 <Route path="companies" element={<div><h1 className="text-3xl font-bold text-white">Empresas</h1></div>} />
                 <Route path="activities" element={<div><h1 className="text-3xl font-bold text-white">Atividades</h1></div>} />
