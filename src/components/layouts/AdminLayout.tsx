@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCog,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -30,16 +31,38 @@ const navItems = [
   { name: "Empresas", href: "/admin/companies", icon: Building },
   { name: "Atividades", href: "/admin/activities", icon: ClipboardList },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart },
-  { name: "Configurações", href: "/admin/settings", icon: Settings },
 ];
+
+const settingsNavItems = [
+    { name: "Usuários", href: "/admin/users", icon: UserCog },
+    { name: "Configurações", href: "/admin/settings", icon: Settings },
+]
 
 const AdminLayout = () => {
   const { profile, logout } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const NavLinks = () => (
-    <nav className="flex flex-col space-y-1">
+    <nav className="flex flex-col space-y-1 flex-grow">
       {navItems.map((item) => (
+        <NavLink
+          key={item.name}
+          to={item.href}
+          className={({ isActive }) =>
+            `flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`
+          }
+          onClick={() => setSidebarOpen(false)}
+        >
+          <item.icon className="w-5 h-5 mr-3" />
+          {item.name}
+        </NavLink>
+      ))}
+      <div className="flex-grow" />
+      {settingsNavItems.map((item) => (
         <NavLink
           key={item.name}
           to={item.href}

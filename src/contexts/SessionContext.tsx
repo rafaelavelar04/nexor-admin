@@ -6,6 +6,7 @@ interface Profile {
   full_name: string;
   avatar_url: string;
   role: string | null;
+  active: boolean;
 }
 
 interface SessionContextValue {
@@ -28,7 +29,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, role')
+        .select('full_name, avatar_url, role, active')
         .eq('id', user.id)
         .single();
 
@@ -39,6 +40,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           full_name: data.full_name,
           avatar_url: data.avatar_url,
           role: data.role,
+          active: data.active,
         });
       }
     } catch (error) {

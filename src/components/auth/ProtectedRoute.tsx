@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const ProtectedRoute = () => {
-  const { session, loading } = useSession();
+  const { session, profile, loading } = useSession();
 
   if (loading) {
     return (
@@ -13,7 +13,7 @@ const ProtectedRoute = () => {
     );
   }
 
-  if (!session) {
+  if (!session || !profile?.active) {
     return <Navigate to="/login" replace />;
   }
 
