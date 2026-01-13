@@ -16,15 +16,12 @@ const LeadsPage = () => {
     let isMounted = true;
 
     const fetchLeads = async () => {
-      // This function is defined inside useEffect to capture isMounted
-      // and to adhere to the no-dependencies rule.
       try {
-        // No need to set loading true here, it's true by default
         const { data, error: fetchError } = await supabase
           .from('leads')
           .select(`
             *,
-            profile:profiles(full_name),
+            responsavel:profiles(full_name),
             tags(*)
           `)
           .order('created_at', { ascending: false });
@@ -36,7 +33,7 @@ const LeadsPage = () => {
         if (isMounted) {
           const formattedData = data.map(lead => ({
             ...lead,
-            profile: Array.isArray(lead.profile) ? lead.profile[0] : lead.profile,
+            responsavel: Array.isArray(lead.responsavel) ? lead.responsavel[0] : lead.responsavel,
             nome_empresa: `${lead.nome} ${lead.empresa}`
           })) as Lead[];
           setLeads(formattedData);
@@ -45,7 +42,7 @@ const LeadsPage = () => {
         console.error("Erro ao carregar os leads:", err);
         if (isMounted) {
           setError(err.message || 'Ocorreu um erro desconhecido.');
-          setLeads([]); // Ensure leads is an empty array on error
+          setLeads([]);
         }
       } finally {
         if (isMounted) {
@@ -59,19 +56,17 @@ const LeadsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array as per the requirement
+  }, []);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('leads').delete().eq('id', id);
       if (error) throw new Error(error.message);
-      return id; // Return the ID of the deleted lead
+      return id;
     },
     onSuccess: (deletedId) => {
       showSuccess('Lead excluído com sucesso!');
-      // Manually update local state to reflect the deletion
       setLeads(prevLeads => prevLeads.filter(lead => lead.id !== deletedId));
-      // Invalidate the query in the cache for data consistency if the user navigates away and back
       queryClient.invalidateQueries({ queryKey: ['leads'] });
     },
     onError: (error) => {

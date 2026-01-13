@@ -31,7 +31,7 @@ export type Lead = {
   status: string
   proximo_followup: string | null
   created_at: string
-  profile: { full_name: string } | null
+  responsavel: { full_name: string } | null
   tags: Tag[]
 }
 
@@ -45,6 +45,15 @@ export const getColumns = (
   {
     accessorKey: "empresa",
     header: "Empresa",
+  },
+  {
+    accessorKey: "responsavel",
+    header: "Responsável",
+    cell: ({ row }) => {
+      const responsavel = row.original.responsavel;
+      return responsavel ? responsavel.full_name : "N/A";
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "tags",
