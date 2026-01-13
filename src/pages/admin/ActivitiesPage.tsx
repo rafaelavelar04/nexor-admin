@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Activity, getColumns } from '@/components/activities/ActivitiesTableColumns';
 import { ActivitiesDataTable } from '@/components/activities/ActivitiesDataTable';
@@ -34,6 +34,30 @@ const ActivitiesPage = () => {
 
   const columns = getColumns({ onEdit: handleEdit, role: profile?.role });
 
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+
+    if (isError || !activities || activities.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-border rounded-lg text-center p-4">
+          <ClipboardList className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground">Nenhuma atividade encontrada</h3>
+          <p className="text-muted-foreground text-sm mt-1">
+            Comece registrando uma nova interação para visualizá-la aqui.
+          </p>
+          <Button onClick={() => setIsFormOpen(true)} className="mt-4">
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Criar Primeira Atividade
+          </Button>
+        </div>
+      );
+    }
+    
+    return <ActivitiesDataTable columns={columns} data={activities} />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -47,13 +71,7 @@ const ActivitiesPage = () => {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-      ) : isError ? (
-        <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">Erro ao carregar as atividades.</div>
-      ) : (
-        <ActivitiesDataTable columns={columns} data={activities || []} />
-      )}
+      {renderContent()}
 
       <ActivityFormDialog
         isOpen={isFormOpen}
