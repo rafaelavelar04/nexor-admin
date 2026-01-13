@@ -16,6 +16,8 @@ import Opportunities from "./pages/admin/Opportunities";
 import OpportunityDetailPage from "./pages/admin/opportunities/OpportunityDetailPage";
 import SettingsPage from "./pages/admin/Settings";
 import GoalsPage from "./pages/admin/GoalsPage";
+import CompaniesPage from "./pages/admin/CompaniesPage";
+import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 
 const queryClient = new QueryClient();
 
@@ -41,7 +43,9 @@ const App = () => (
                 <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="metas" element={<GoalsPage />} />
-                <Route path="companies" element={<div><h1 className="text-3xl font-bold text-white">Empresas</h1></div>} />
+                <Route path="companies" element={<CompaniesPage />} />
+                <Route path="companies/novo" element={<CompanyFormPage />} />
+                <Route path="companies/:id" element={<CompanyFormPage />} />
                 <Route path="activities" element={<div><h1 className="text-3xl font-bold text-white">Atividades</h1></div>} />
                 <Route path="reports" element={<div><h1 className="text-3xl font-bold text-white">Relatórios</h1></div>} />
               </Route>
