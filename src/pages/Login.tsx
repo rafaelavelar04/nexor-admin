@@ -50,18 +50,38 @@ const Login = () => {
           localization={{
             variables: {
               sign_in: {
-                email_label: 'Seu endereço de e-mail',
-                password_label: 'Sua senha',
+                email_label: 'E-mail',
+                password_label: 'Senha',
+                email_input_placeholder: 'Digite seu e-mail',
+                password_input_placeholder: 'Digite sua senha',
                 button_label: 'Entrar',
                 loading_button_label: 'Entrando...',
               },
               sign_up: {
-                email_label: 'Seu endereço de e-mail',
-                password_label: 'Sua senha',
-                button_label: 'Registrar',
-                loading_button_label: 'Registrando...',
-              }
-            }
+                email_label: 'E-mail',
+                password_label: 'Senha',
+                email_input_placeholder: 'Digite seu e-mail',
+                password_input_placeholder: 'Crie uma senha',
+                button_label: 'Criar conta',
+                loading_button_label: 'Criando...',
+                link_text: 'Não tem uma conta? Crie uma agora',
+              },
+              forgotten_password: {
+                link_text: 'Esqueceu sua senha?',
+                email_label: 'E-mail',
+                email_input_placeholder: 'Digite seu e-mail',
+                button_label: 'Enviar instruções',
+                loading_button_label: 'Enviando...',
+                confirmation_text: 'Verifique seu e-mail para o link de redefinição de senha.',
+              },
+              update_password: {
+                password_label: 'Nova senha',
+                password_input_placeholder: 'Sua nova senha',
+                button_label: 'Atualizar senha',
+                loading_button_label: 'Atualizando...',
+                confirmation_text: 'Sua senha foi atualizada.',
+              },
+            },
           }}
         />
       </div>
