@@ -1,0 +1,106 @@
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/contexts/SessionContext';
+import { Loader2, PlusCircle, DollarSign, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { KpiCard } from '@/components/dashboard/KpiCard';
+import { EmptyState } from '@/components/common/EmptyState';
+// TODO: Create and import these components
+// import { ContractsDataTable } from '@/components/finance/ContractsDataTable';
+// import { getColumns } from '@/components/finance/ContractsTableColumns';
+// import { ContractFormDialog } from '@/components/finance/ContractFormDialog';
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const FinancePage = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useSession();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
+
+  const { data: contracts, isLoading, isError } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*, company:companies(nome), opportunity:opportunities(titulo), creator:profiles(full_name)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { mrr, totalActiveRevenue } = useMemo(() => {
+    if (!contracts) return { mrr: 0, totalActiveRevenue: 0 };
+    const activeContracts = contracts.filter(c => c.status === 'ativo');
+    
+    const mrr = activeContracts
+      .filter(c => c.type === 'recorrente' && c.billing_cycle === 'mensal')
+      .reduce((sum, c) => sum + c.value, 0);
+
+    const totalActiveRevenue = activeContracts.reduce((sum, c) => sum + c.value, 0);
+
+    return { mrr, totalActiveRevenue };
+  }, [contracts]);
+
+  const canManage = profile?.role === 'admin';
+
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+    if (isError) {
+      return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">Erro ao carregar os contratos.</div>;
+    }
+    if (!contracts || contracts.length === 0) {
+      return (
+        <EmptyState
+          icon={<DollarSign className="w-12 h-12" />}
+          title="Nenhum contrato encontrado"
+          description="Crie o primeiro contrato a partir de uma oportunidade ganha ou manualmente para começar a monitorar sua receita."
+          cta={canManage ? { text: "Novo Contrato", onClick: () => setIsFormOpen(true) } : undefined}
+        />
+      );
+    }
+    // TODO: Replace with actual DataTable
+    return <div className="text-center p-8 bg-secondary rounded-lg">Tabela de Contratos será implementada aqui.</div>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Financeiro</h1>
+          <p className="text-muted-foreground mt-1">Gerencie contratos e acompanhe a receita da sua empresa.</p>
+        </div>
+        {canManage && (
+          <Button onClick={() => setIsFormOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Novo Contrato
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <KpiCard title="Receita Mensal Recorrente (MRR)" value={currencyFormatter.format(mrr)} icon={<TrendingUp className="h-5 w-5 text-green-400" />} />
+        <KpiCard title="Receita Ativa Total" value={currencyFormatter.format(totalActiveRevenue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} />
+      </div>
+
+      {renderContent()}
+
+      {/* TODO: Implement and enable ContractFormDialog
+      <ContractFormDialog
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedContract(null);
+        }}
+        contract={selectedContract}
+      />
+      */}
+    </div>
+  );
+};
+
+export default FinancePage;

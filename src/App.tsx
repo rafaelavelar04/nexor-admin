@@ -20,6 +20,7 @@ import CompaniesPage from "./pages/admin/CompaniesPage";
 import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 import ActivitiesPage from "./pages/admin/ActivitiesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
+import FinancePage from "./pages/admin/FinancePage";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="companies/:id" element={<CompanyFormPage />} />
                 <Route path="activities" element={<ActivitiesPage />} />
                 <Route path="reports" element={<ReportsPage />} />
+                <Route path="financeiro" element={<FinancePage />} />
               </Route>
             </Route>
 
