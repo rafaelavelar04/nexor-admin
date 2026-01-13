@@ -33,6 +33,7 @@ const Login = () => {
         <Auth
           supabaseClient={supabase}
           view="sign_in"
+          showLinks={false}
           appearance={{ 
             theme: ThemeSupa,
             variables: {
@@ -61,21 +62,6 @@ const Login = () => {
                 password_input_placeholder: 'Digite sua senha',
                 button_label: 'Entrar',
                 loading_button_label: 'Entrando...',
-              },
-              forgotten_password: {
-                link_text: 'Esqueceu sua senha?',
-                email_label: 'E-mail',
-                email_input_placeholder: 'Digite seu e-mail',
-                button_label: 'Enviar instruções',
-                loading_button_label: 'Enviando...',
-                confirmation_text: 'Verifique seu e-mail para o link de redefinição de senha.',
-              },
-              update_password: {
-                password_label: 'Nova senha',
-                password_input_placeholder: 'Sua nova senha',
-                button_label: 'Atualizar senha',
-                loading_button_label: 'Atualizando...',
-                confirmation_text: 'Sua senha foi atualizada.',
               },
             },
           }}
