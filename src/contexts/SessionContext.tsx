@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 interface Profile {
   full_name: string;
@@ -25,37 +26,40 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (user: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url, role, active')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setProfile({
-          full_name: data.full_name,
-          avatar_url: data.avatar_url,
-          role: data.role,
-          active: data.active,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      setProfile(null);
-    }
-  };
-
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user);
+        try {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url, role, active')
+            .eq('id', session.user.id)
+            .single();
+
+          if (error) throw error;
+
+          if (profileData) {
+            // Success: User has a session and a profile.
+            setSession(session);
+            setUser(session.user);
+            setProfile(profileData);
+          } else {
+            // Failure: User has a session but no profile.
+            throw new Error("Perfil de usuário não encontrado.");
+          }
+        } catch (error: any) {
+          // Failure: Error fetching profile.
+          console.error("Falha ao buscar perfil, desconectando.", error);
+          showError("Não foi possível carregar seu perfil. Tente novamente.");
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
       } else {
+        // No session.
+        setSession(null);
+        setUser(null);
         setProfile(null);
       }
       setLoading(false);
@@ -68,9 +72,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
+    // The onAuthStateChange listener will handle state cleanup automatically.
   };
 
   const value = {
