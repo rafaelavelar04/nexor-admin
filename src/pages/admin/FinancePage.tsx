@@ -22,10 +22,7 @@ const FinancePage = () => {
   const { data: contracts, isLoading, isError } = useQuery({
     queryKey: ['contracts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('*, company:companies(nome), opportunity:opportunities(titulo), creator:profiles(full_name)')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_contracts');
       if (error) throw error;
       return data || [];
     },
