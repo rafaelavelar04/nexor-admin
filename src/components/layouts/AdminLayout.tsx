@@ -69,8 +69,9 @@ const AdminLayout = () => {
       >
         <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <Link to="/admin" className="text-xl font-bold text-white">
-              Nexor Admin
+            <Link to="/admin" className="flex items-center gap-3 text-xl font-bold text-white">
+              <img src="/branding/Nexor - SF2.png" alt="Nexor Icon" className="w-8 h-8" />
+              <span>Nexor Admin</span>
             </Link>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white">
               <X className="w-6 h-6" />
@@ -83,7 +84,8 @@ const AdminLayout = () => {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:flex-col w-64 bg-gray-800 border-r border-gray-700 p-4">
-        <div className="flex items-center mb-8">
+        <div className="flex items-center gap-3 mb-8">
+          <img src="/branding/Nexor - SF2.png" alt="Nexor Icon" className="w-8 h-8" />
           <h1 className="text-xl font-bold text-white">Nexor Admin</h1>
         </div>
         <NavLinks />
