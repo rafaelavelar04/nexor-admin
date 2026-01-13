@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Loader2, PlusCircle, DollarSign, TrendingUp } from 'lucide-react';
@@ -14,7 +14,6 @@ import { EmptyState } from '@/components/common/EmptyState';
 const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const FinancePage = () => {
-  const queryClient = useQueryClient();
   const { profile } = useSession();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
@@ -24,9 +23,16 @@ const FinancePage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contracts')
-        .select('*, company:companies(nome), opportunity:opportunities(titulo), creator:profiles(full_name)')
+        .select(`
+          *,
+          company:companies(nome),
+          opportunity:opportunities(titulo),
+          creator:profiles(full_name)
+        `)
         .order('created_at', { ascending: false });
+      
       if (error) throw error;
+      
       return data || [];
     },
   });
