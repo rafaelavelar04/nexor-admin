@@ -6,11 +6,17 @@ import { SortableContext } from '@dnd-kit/sortable';
 import { PipelineColumn, Stage } from '@/components/opportunities/PipelineColumn';
 import { Opportunity } from '@/components/opportunities/OpportunityCard';
 import { WinLossConfirmationModal } from '@/components/opportunities/WinLossConfirmationModal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
+import { Button } from '@/components/ui/button';
+import { exportToCsv } from '@/lib/exportUtils';
 
-type FullOpportunity = Opportunity & { pipeline_stage_id: string };
+type FullOpportunity = Opportunity & { 
+  pipeline_stage_id: string;
+  lead: { nome: string, empresa: string } | null;
+  responsavel: { full_name: string } | null;
+};
 
 const Opportunities = () => {
   const queryClient = useQueryClient();
@@ -47,7 +53,6 @@ const Opportunities = () => {
           lead:leads(nome, empresa)
         `);
       if (error) throw new Error(error.message);
-      // Filter for open opportunities on the client side to keep the view clean
       setOpportunities(data?.filter(o => o.status === 'open') || []);
       return data;
     },
@@ -109,6 +114,21 @@ const Opportunities = () => {
     setModalState({ isOpen: false, opportunity: null, targetStage: null });
   };
 
+  const handleExport = () => {
+    const stageMap = new Map(stages.map(s => [s.id, s.nome]));
+    const dataToExport = opportunities.map(opp => ({
+      id: opp.id,
+      titulo: opp.titulo,
+      valor_estimado: opp.valor_estimado,
+      etapa: stageMap.get(opp.pipeline_stage_id) || 'N/A',
+      responsavel: opp.responsavel?.full_name || 'N/A',
+      lead_nome: opp.lead?.nome || 'N/A',
+      lead_empresa: opp.lead?.empresa || 'N/A',
+      proximo_followup: opp.proximo_followup,
+    }));
+    exportToCsv(`pipeline_${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
+  };
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -122,7 +142,13 @@ const Opportunities = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-6">Pipeline de Oportunidades</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-white">Pipeline de Oportunidades</h1>
+        <Button onClick={handleExport} variant="outline">
+          <Download className="w-4 h-4 mr-2" />
+          Exportar Pipeline
+        </Button>
+      </div>
       <div className="flex gap-4 overflow-x-auto pb-4">
         <DndContext sensors={sensors} onDragEnd={onDragEnd} disabled={!canManage}>
           <SortableContext items={stagesIds}>

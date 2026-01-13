@@ -11,9 +11,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { useNavigate } from "react-router-dom"
-import { PlusCircle, Check } from "lucide-react"
+import { PlusCircle, Check, Download } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { exportToCsv } from "@/lib/exportUtils"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,7 @@ interface DataTableProps<TData, TValue> {
 
 type Tag = { id: string; nome: string; };
 
-export function LeadsDataTable<TData, TValue>({
+export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
@@ -68,6 +69,18 @@ export function LeadsDataTable<TData, TValue>({
   ];
 
   const selectedTagIds = (table.getColumn("tags")?.getFilterValue() as Set<string>) ?? new Set();
+
+  const handleExport = () => {
+    const filteredData = table.getFilteredRowModel().rows.map(row => {
+      const { responsavel, tags, ...rest } = row.original;
+      return {
+        ...rest,
+        responsavel_nome: responsavel?.full_name || 'N/A',
+        tags: tags.map(t => t.nome).join(', '),
+      };
+    });
+    exportToCsv(`leads_${new Date().toISOString().split('T')[0]}.csv`, filteredData);
+  };
 
   return (
     <div>
@@ -133,6 +146,10 @@ export function LeadsDataTable<TData, TValue>({
               {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button onClick={handleExport} variant="outline" className="bg-gray-800 border-gray-700">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
           <Button onClick={() => navigate('/admin/leads/novo')} className="bg-cyan-500 hover:bg-cyan-600 text-white">
             <PlusCircle className="w-4 h-4 mr-2" />
             Novo Lead
