@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 type Tag = {
   id: string;
@@ -36,7 +35,8 @@ export type Lead = {
 }
 
 export const getColumns = (
-  handleDelete: (id: string) => void
+  handleDelete: (id: string) => void,
+  handleConvert: (lead: Lead) => void,
 ): ColumnDef<Lead>[] => [
   {
     accessorKey: "nome",
@@ -115,6 +115,10 @@ export const getColumns = (
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => navigate(`/admin/leads/${lead.id}`)} className="cursor-pointer">
               Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleConvert(lead)} className="cursor-pointer">
+              <Briefcase className="mr-2 h-4 w-4" />
+              Converter em Oportunidade
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-700" />
             <DropdownMenuItem onClick={() => handleDelete(lead.id)} className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-500/10">

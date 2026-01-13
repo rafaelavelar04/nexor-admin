@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable';
 import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
+import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -11,6 +12,8 @@ const LeadsPage = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -26,9 +29,7 @@ const LeadsPage = () => {
           `)
           .order('created_at', { ascending: false });
 
-        if (fetchError) {
-          throw new Error(fetchError.message);
-        }
+        if (fetchError) throw new Error(fetchError.message);
 
         if (isMounted) {
           const formattedData = data.map(lead => ({
@@ -45,17 +46,13 @@ const LeadsPage = () => {
           setLeads([]);
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchLeads();
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   const deleteMutation = useMutation({
@@ -80,7 +77,12 @@ const LeadsPage = () => {
     }
   };
 
-  const columns = useMemo(() => getColumns(handleDelete), []);
+  const handleConvert = (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsModalOpen(true);
+  };
+
+  const columns = useMemo(() => getColumns(handleDelete, handleConvert), []);
 
   return (
     <div>
@@ -98,6 +100,16 @@ const LeadsPage = () => {
       ) : (
         <LeadsDataTable columns={columns} data={leads} />
       )}
+
+      <ConvertLeadModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedLead(null);
+        }}
+        leadId={selectedLead?.id || null}
+        leadName={selectedLead?.nome || null}
+      />
     </div>
   );
 };
