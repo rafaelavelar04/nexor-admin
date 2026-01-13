@@ -16,16 +16,7 @@ const ActivitiesPage = () => {
   const { data: activities, isLoading, isError } = useQuery<Activity[]>({
     queryKey: ['activities'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('activities')
-        .select(`
-          *,
-          user:profiles(id, full_name),
-          lead:leads(id, nome),
-          opportunity:opportunities(id, titulo),
-          company:companies(id, nome)
-        `)
-        .order('activity_date', { ascending: false });
+      const { data, error } = await supabase.rpc('get_all_activities');
       if (error) throw error;
       return data || [];
     },
