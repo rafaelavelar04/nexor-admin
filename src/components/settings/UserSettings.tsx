@@ -102,7 +102,7 @@ const UserSettings = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja desativar o usuário "{userToDeavtivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
+                Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
