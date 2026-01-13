@@ -3,17 +3,18 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
-  const { session } = useSession();
+  const { session, loading } = useSession();
 
-  useEffect(() => {
-    // This is for when the user signs in, the page will redirect
-    if (session) {
-      window.location.href = '/admin';
-    }
-  }, [session]);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
 
   if (session) {
     return <Navigate to="/admin" replace />;

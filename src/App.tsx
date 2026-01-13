@@ -25,30 +25,24 @@ const App = () => (
       <SessionProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="leads" element={<LeadsPage />} />
-              <Route path="leads/novo" element={<LeadFormPage />} />
-              <Route path="leads/:id" element={<LeadFormPage />} />
-              <Route path="opportunities" element={<Opportunities />} />
-              <Route path="settings" element={<Settings />} />
-              {/* Placeholder routes for other sections */}
-              <Route path="companies" element={<div><h1 className="text-3xl font-bold text-white">Empresas</h1></div>} />
-              <Route path="activities" element={<div><h1 className="text-3xl font-bold text-white">Atividades</h1></div>} />
-              <Route path="reports" element={<div><h1 className="text-3xl font-bold text-white">Relatórios</h1></div>} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="leads" element={<LeadsPage />} />
+                <Route path="leads/novo" element={<LeadFormPage />} />
+                <Route path="leads/:id" element={<LeadFormPage />} />
+                <Route path="opportunities" element={<Opportunities />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="companies" element={<div><h1 className="text-3xl font-bold text-white">Empresas</h1></div>} />
+                <Route path="activities" element={<div><h1 className="text-3xl font-bold text-white">Atividades</h1></div>} />
+                <Route path="reports" element={<div><h1 className="text-3xl font-bold text-white">Relatórios</h1></div>} />
+              </Route>
             </Route>
 
-            <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
