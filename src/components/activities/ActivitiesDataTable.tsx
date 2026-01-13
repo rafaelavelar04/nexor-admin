@@ -13,7 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { DateRange } from "react-day-picker"
-import { addDays, format } from "date-fns"
+import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -32,7 +32,9 @@ interface DataTableProps<TData, TValue> {
 type UserProfile = { id: string; full_name: string; };
 
 export function ActivitiesDataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: "activity_date", desc: true },
+  ]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [date, setDate] = React.useState<DateRange | undefined>()
 
