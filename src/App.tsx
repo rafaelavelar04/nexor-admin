@@ -18,6 +18,7 @@ import SettingsPage from "./pages/admin/Settings";
 import GoalsPage from "./pages/admin/GoalsPage";
 import CompaniesPage from "./pages/admin/CompaniesPage";
 import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
+import ActivitiesPage from "./pages/admin/ActivitiesPage";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +47,7 @@ const App = () => (
                 <Route path="companies" element={<CompaniesPage />} />
                 <Route path="companies/novo" element={<CompanyFormPage />} />
                 <Route path="companies/:id" element={<CompanyFormPage />} />
-                <Route path="activities" element={<div><h1 className="text-3xl font-bold text-white">Atividades</h1></div>} />
+                <Route path="activities" element={<ActivitiesPage />} />
                 <Route path="reports" element={<div><h1 className="text-3xl font-bold text-white">Relatórios</h1></div>} />
               </Route>
             </Route>
