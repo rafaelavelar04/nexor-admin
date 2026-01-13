@@ -20,10 +20,10 @@ const Login = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4">
       <div className="w-full max-w-md p-8 space-y-8 bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-lg border border-gray-700">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <img src="/branding/Nexor SF.png" alt="Nexor Logo" className="w-32" />
+        <div className="flex flex-col items-center text-center space-y-6">
+          <img src="/branding/Nexor SF.png" alt="Nexor Logo" className="w-52 md:w-72" />
           <p className="text-gray-400">Acesse seu painel administrativo</p>
         </div>
         <Auth
