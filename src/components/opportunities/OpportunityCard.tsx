@@ -2,8 +2,10 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, User } from 'lucide-react';
+import { DollarSign, User, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getFollowUpStatus } from '@/lib/followupUtils';
+import { format } from 'date-fns';
 
 export type Opportunity = {
   id: string;
@@ -12,6 +14,7 @@ export type Opportunity = {
   responsavel: { full_name: string } | null;
   lead: { nome: string, empresa: string } | null;
   status: 'open' | 'won' | 'lost';
+  proximo_followup: string | null;
 };
 
 interface OpportunityCardProps {
@@ -38,14 +41,9 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
     currency: 'BRL',
   });
 
-  const statusStyles = {
-    open: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30 capitalize',
-    won: 'bg-green-500/20 text-green-300 border-green-500/30 capitalize',
-    lost: 'bg-red-500/20 text-red-300 border-red-500/30 capitalize',
-  };
+  const followUpStatus = getFollowUpStatus(opportunity.proximo_followup);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent navigation when dragging
     if (e.target instanceof HTMLElement && e.target.closest('button')) return;
     if (isDragging) return;
     navigate(`/admin/opportunities/${opportunity.id}`);
@@ -59,12 +57,16 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
             <CardTitle className="text-base font-semibold">{opportunity.titulo}</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pt-2 space-y-3 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              {opportunity.lead && (
-                <Badge variant="secondary" className="bg-gray-700 text-gray-300 font-normal">{opportunity.lead.empresa}</Badge>
-              )}
-              <Badge className={statusStyles[opportunity.status]}>{opportunity.status}</Badge>
-            </div>
+            {opportunity.lead && (
+              <Badge variant="secondary" className="bg-gray-700 text-gray-300 font-normal">{opportunity.lead.empresa}</Badge>
+            )}
+            {followUpStatus && (
+              <div className="flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                <span>{format(new Date(opportunity.proximo_followup!), 'dd/MM/yy')}</span>
+                <Badge variant={followUpStatus.variant} className={`ml-2 ${followUpStatus.className}`}>{followUpStatus.text}</Badge>
+              </div>
+            )}
             <div className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" />
               <span>{opportunity.valor_estimado ? currencyFormatter.format(opportunity.valor_estimado) : 'Não definido'}</span>

@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { DashboardChart } from '@/components/dashboard/DashboardChart';
+import { FollowUpListCard } from '@/components/dashboard/FollowUpListCard';
 import { Loader2, Users, Briefcase, Target, CheckCircle, BarChart, DollarSign } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell, Line, LineChart } from 'recharts';
-import { subDays, startOfMonth, isWithinInterval } from 'date-fns';
+import { subDays, startOfMonth, isWithinInterval, isBefore, isToday, startOfToday } from 'date-fns';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -13,10 +14,10 @@ const Dashboard = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboardData'],
     queryFn: async () => {
-      const { data: leads, error: leadsError } = await supabase.from('leads').select('*');
+      const { data: leads, error: leadsError } = await supabase.from('leads').select('*, responsavel:profiles(full_name)');
       if (leadsError) throw leadsError;
 
-      const { data: opportunities, error: oppsError } = await supabase.from('opportunities').select('*, pipeline_stage:pipeline_stages(nome, ordem)');
+      const { data: opportunities, error: oppsError } = await supabase.from('opportunities').select('*, pipeline_stage:pipeline_stages(nome, ordem), responsavel:profiles(full_name)');
       if (oppsError) throw oppsError;
 
       return { leads, opportunities };
@@ -47,6 +48,16 @@ const Dashboard = () => {
   const wonThisMonthValue = opportunities
     .filter(o => o.status === 'won' && o.closed_at && isWithinInterval(new Date(o.closed_at), { start: startOfCurrentMonth, end: now }))
     .reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
+
+  // Follow-up Calculations
+  const today = startOfToday();
+  const allFollowUps = [
+    ...leads.filter(l => l.proximo_followup).map(l => ({ id: l.id, type: 'Lead' as const, name: l.nome, responsible: l.responsavel?.full_name || 'N/A', date: l.proximo_followup! })),
+    ...opportunities.filter(o => o.proximo_followup).map(o => ({ id: o.id, type: 'Oportunidade' as const, name: o.titulo, responsible: o.responsavel?.full_name || 'N/A', date: o.proximo_followup! }))
+  ];
+  
+  const overdueFollowUps = allFollowUps.filter(f => isBefore(new Date(f.date), today));
+  const todayFollowUps = allFollowUps.filter(f => isToday(new Date(f.date)));
 
   // Chart Data Processing
   const leadsByStatusData = Object.entries(
@@ -93,6 +104,11 @@ const Dashboard = () => {
         <KpiCard title="Ganhos no Mês" value={currencyFormatter.format(wonThisMonthValue)} icon={<DollarSign className="h-4 w-4 text-gray-500" />} />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 mt-6">
+        <FollowUpListCard title="Follow-ups Atrasados" items={overdueFollowUps} badgeText="Atrasados" badgeClass="bg-red-500/80 text-white" />
+        <FollowUpListCard title="Follow-ups de Hoje" items={todayFollowUps} badgeText="para Hoje" badgeClass="bg-yellow-500/80 text-white" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <DashboardChart title="Leads por Status">
           <PieChart>
@@ -117,7 +133,7 @@ const Dashboard = () => {
 
         <DashboardChart title="Ganhos nos Últimos 30 Dias">
           <LineChart data={formattedRevenueData}>
-            <XAxis dataKey="date" stroke="#a1a1aa" fontSize={12} tickFormatter={(str) => new Date(str).toLocaleDateString('pt-BR')} />
+            <XAxis dataKey="date" stroke="#a1a1aa" fontSize={12} tickFormatter={(str) => new Date(str).toLocaleString('pt-BR')} />
             <YAxis stroke="#a1a1aa" fontSize={12} tickFormatter={(value) => currencyFormatter.format(value as number)} />
             <Tooltip formatter={(value) => currencyFormatter.format(value as number)} />
             <Legend />

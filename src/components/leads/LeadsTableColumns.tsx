@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import { format } from 'date-fns';
+import { getFollowUpStatus } from "@/lib/followupUtils"
 
 type Tag = {
   id: string;
@@ -95,7 +96,13 @@ export const getColumns = (
     },
     cell: ({ row }) => {
       const date = row.getValue("proximo_followup")
-      return date ? format(new Date(date as string), "dd/MM/yyyy") : "N/A"
+      const followUpStatus = getFollowUpStatus(date as string | null);
+      return (
+        <div className="flex items-center gap-2">
+          <span>{date ? format(new Date(date as string), "dd/MM/yyyy") : "N/A"}</span>
+          {followUpStatus && <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>}
+        </div>
+      )
     },
   },
   {

@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, User, Layers, Edit } from "lucide-react";
+import { DollarSign, User, Layers, Edit, Calendar } from "lucide-react";
+import { getFollowUpStatus } from "@/lib/followupUtils";
+import { format } from "date-fns";
 
 export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, canEdit: boolean }) => {
   const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -10,6 +12,8 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
     won: 'bg-green-500/20 text-green-300 border-green-500/30 capitalize',
     lost: 'bg-red-500/20 text-red-300 border-red-500/30 capitalize',
   };
+
+  const followUpStatus = getFollowUpStatus(opportunity.proximo_followup);
 
   return (
     <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
@@ -25,7 +29,7 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
           </Button>
         )}
       </div>
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
         <div className="flex items-center gap-2">
           <Badge className={statusStyles[opportunity.status]}>{opportunity.status}</Badge>
         </div>
@@ -41,6 +45,13 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
           <Layers className="w-5 h-5 text-cyan-400" />
           <span>{opportunity.pipeline_stage?.nome || 'N/A'}</span>
         </div>
+        {followUpStatus && (
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-cyan-400" />
+            <span className="text-gray-300">{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy')}</span>
+            <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>
+          </div>
+        )}
       </div>
     </div>
   );
