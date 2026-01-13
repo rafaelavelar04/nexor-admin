@@ -32,6 +32,7 @@ const Login = () => {
         </p>
         <Auth
           supabaseClient={supabase}
+          view="sign_in"
           appearance={{ 
             theme: ThemeSupa,
             variables: {
@@ -60,15 +61,6 @@ const Login = () => {
                 password_input_placeholder: 'Digite sua senha',
                 button_label: 'Entrar',
                 loading_button_label: 'Entrando...',
-              },
-              sign_up: {
-                email_label: 'E-mail',
-                password_label: 'Senha',
-                email_input_placeholder: 'Digite seu e-mail',
-                password_input_placeholder: 'Crie uma senha',
-                button_label: 'Criar conta',
-                loading_button_label: 'Criando...',
-                link_text: 'Não tem uma conta? Crie uma agora',
               },
               forgotten_password: {
                 link_text: 'Esqueceu sua senha?',
