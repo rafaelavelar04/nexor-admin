@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DatePicker } from '@/components/ui/date-picker';
 import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
@@ -33,9 +33,10 @@ const LeadFormPage = () => {
 
   const [selectedTags, setSelectedTags] = useState<Selectable[]>([]);
 
-  const { data: leadData, isLoading: isLoadingLead } = useQuery({
+  const { data: leadData, isLoading: isLoadingLead, isError: isErrorLead } = useQuery({
     queryKey: ['lead', id],
     queryFn: async () => {
+      if (!id) return null;
       const { data, error } = await supabase.from('leads').select('*, tags(*)').eq('id', id).single();
       if (error) throw new Error(error.message);
       return data;
@@ -43,8 +44,16 @@ const LeadFormPage = () => {
     enabled: isEditMode,
   });
 
-  const { data: users, isLoading: isLoadingUsers } = useQuery<UserProfile[]>({ /* ... */ });
-  const { data: allTags, isLoading: isLoadingTags } = useQuery<Tag[]>({
+  const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useQuery<UserProfile[]>({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('id, full_name');
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+  });
+
+  const { data: allTags, isLoading: isLoadingTags, isError: isErrorTags } = useQuery<Tag[]>({
     queryKey: ['tags'],
     queryFn: async () => {
       const { data, error } = await supabase.from('tags').select('*');
@@ -55,7 +64,17 @@ const LeadFormPage = () => {
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
-    defaultValues: { /* ... */ },
+    defaultValues: {
+      nome: '',
+      empresa: '',
+      nicho: '',
+      responsavel_id: '',
+      status: 'Não contatado',
+      cargo: '',
+      email: '',
+      whatsapp: '',
+      observacoes: '',
+    },
   });
 
   useEffect(() => {
@@ -115,6 +134,20 @@ const LeadFormPage = () => {
     return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
+  if (isErrorLead || isErrorUsers || isErrorTags) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-red-400 bg-red-500/10 p-6 rounded-md">
+        <AlertTriangle className="w-12 h-12 mb-4" />
+        <h2 className="text-xl font-bold mb-2 text-white">Erro ao Carregar Dados</h2>
+        <p className="text-center text-red-300">Não foi possível carregar as informações necessárias para esta página. <br />Verifique sua conexão ou as permissões de acesso e tente novamente.</p>
+        <Button variant="ghost" onClick={() => navigate('/admin/leads')} className="mt-6">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar para a Lista de Leads
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Button variant="ghost" onClick={() => navigate('/admin/leads')} className="mb-4">
@@ -125,7 +158,6 @@ const LeadFormPage = () => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* ... other form fields ... */}
             <FormField control={form.control} name="nome" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
