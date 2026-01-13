@@ -6,14 +6,22 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { useSession } from '@/contexts/SessionContext';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { profile } = useSession();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
   useEffect(() => {
     let isMounted = true;
@@ -82,12 +90,22 @@ const LeadsPage = () => {
     setIsModalOpen(true);
   };
 
-  const columns = useMemo(() => getColumns(handleDelete, handleConvert), []);
+  const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white">Leads</h1>
-      <p className="text-gray-400 mt-2 mb-6">Gerencie seus leads de prospecção.</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Leads</h1>
+          <p className="text-gray-400 mt-2">Gerencie seus leads de prospecção.</p>
+        </div>
+        {canManage && (
+          <Button onClick={() => navigate('/admin/leads/novo')} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Novo Lead
+          </Button>
+        )}
+      </div>
       
       {isLoading ? (
         <div className="flex justify-center items-center h-64">

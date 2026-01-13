@@ -116,7 +116,7 @@ const AdminLayout = () => {
               <DropdownMenuLabel>
                 <div className="font-medium">{profile?.full_name}</div>
                 <div className="text-xs text-gray-400 capitalize">
-                  {profile?.roles?.join(", ") || "Role"}
+                  {profile?.role || "Role"}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />

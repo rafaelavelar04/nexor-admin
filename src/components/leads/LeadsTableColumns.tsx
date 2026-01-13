@@ -37,6 +37,7 @@ export type Lead = {
 export const getColumns = (
   handleDelete: (id: string) => void,
   handleConvert: (lead: Lead) => void,
+  role: string | null | undefined
 ): ColumnDef<Lead>[] => [
   {
     accessorKey: "nome",
@@ -102,6 +103,9 @@ export const getColumns = (
     cell: ({ row }) => {
       const lead = row.original
       const navigate = useNavigate()
+      const canManage = role === 'admin' || role === 'vendas';
+
+      if (!canManage) return null;
 
       return (
         <DropdownMenu>

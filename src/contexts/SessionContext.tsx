@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Profile {
   full_name: string;
   avatar_url: string;
-  roles: string[];
+  role: string | null;
 }
 
 interface SessionContextValue {
@@ -22,36 +22,34 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Start as true, will be set to false once auth state is determined.
+  const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (user: User) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, user_roles(roles(name))')
+        .select('full_name, avatar_url, role')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
 
       if (data) {
-        const roles = data.user_roles.map((ur: any) => ur.roles.name);
         setProfile({
           full_name: data.full_name,
           avatar_url: data.avatar_url,
-          roles: roles,
+          role: data.role,
         });
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
-      setProfile(null); // Ensure profile is cleared on error
+      setProfile(null);
     }
   };
 
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        // 1. Get the initial session
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
@@ -64,14 +62,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setProfile(null);
       } finally {
-        // 2. ALWAYS set loading to false after the check is complete
         setLoading(false);
       }
     };
 
     initializeSession();
 
-    // 3. Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
