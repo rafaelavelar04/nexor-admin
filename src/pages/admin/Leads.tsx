@@ -93,14 +93,14 @@ const LeadsPage = () => {
   const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Leads</h1>
-          <p className="text-gray-400 mt-2">Gerencie seus leads de prospecção.</p>
+          <h1 className="text-2xl font-bold text-foreground">Leads</h1>
+          <p className="text-muted-foreground mt-1">Gerencie e qualifique seus contatos de prospecção.</p>
         </div>
         {canManage && (
-          <Button onClick={() => navigate('/admin/leads/novo')} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+          <Button onClick={() => navigate('/admin/leads/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <PlusCircle className="w-4 h-4 mr-2" />
             Novo Lead
           </Button>
@@ -109,10 +109,10 @@ const LeadsPage = () => {
       
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : error ? (
-        <div className="text-red-400 bg-red-900/20 p-4 rounded-md">
+        <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30">
           <strong>Erro ao carregar os leads:</strong> {error}
         </div>
       ) : (
