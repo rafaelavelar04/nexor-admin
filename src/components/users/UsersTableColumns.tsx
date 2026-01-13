@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 export type User = {
   id: string;
   full_name: string;
-  email: string;
   role: string;
   active: boolean;
 };
@@ -24,10 +23,6 @@ export const UsersTableColumns = ({ onRoleChange, onStatusChange, currentUserId 
     cell: ({ row }) => (
       <div className="font-medium">{row.original.full_name}</div>
     ),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
   },
   {
     accessorKey: "role",

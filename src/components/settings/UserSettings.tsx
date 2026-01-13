@@ -30,7 +30,7 @@ const UserSettings = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('get_users_with_email');
+      const { data, error: rpcError } = await supabase.rpc('get_users');
       if (rpcError) throw rpcError;
       setUsers(data || []);
     } catch (err: any) {
@@ -102,7 +102,7 @@ const UserSettings = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Desativação</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja desativar o usuário "{userToDeactivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
+                Tem certeza que deseja desativar o usuário "{userToDeavtivate?.full_name}"? Ele perderá o acesso ao sistema imediatamente.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
