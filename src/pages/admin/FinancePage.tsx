@@ -6,47 +6,52 @@ import { Loader2, PlusCircle, DollarSign, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { EmptyState } from '@/components/common/EmptyState';
-// TODO: Create and import these components
-// import { ContractsDataTable } from '@/components/finance/ContractsDataTable';
-// import { getColumns } from '@/components/finance/ContractsTableColumns';
-// import { ContractFormDialog } from '@/components/finance/ContractFormDialog';
+import { ContractsDataTable } from '@/components/finance/ContractsDataTable';
+import { getColumns, Contract } from '@/components/finance/ContractsTableColumns';
+import { ContractFormDialog } from '@/components/finance/ContractFormDialog';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const FinancePage = () => {
   const { profile } = useSession();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState(null);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
-  const { data: contracts, isLoading, isError } = useQuery({
+  const { data: contracts, isLoading, isError } = useQuery<Contract[]>({
     queryKey: ['contracts'],
     queryFn: async () => {
-      // Simplified query to fetch only necessary fields and avoid RLS issues on joined tables
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('status, type, billing_cycle, value, created_at')
-        .order('created_at', { ascending: false });
-      
+      const { data, error } = await supabase.rpc('get_contracts');
       if (error) throw error;
-      
       return data || [];
     },
   });
 
-  const { mrr, totalActiveRevenue } = useMemo(() => {
-    if (!contracts) return { mrr: 0, totalActiveRevenue: 0 };
+  const { mrr, totalActiveValue } = useMemo(() => {
+    if (!contracts) return { mrr: 0, totalActiveValue: 0 };
     const activeContracts = contracts.filter(c => c.status === 'ativo');
     
     const mrr = activeContracts
       .filter(c => c.type === 'recorrente' && c.billing_cycle === 'mensal')
       .reduce((sum, c) => sum + (c.value || 0), 0);
 
-    const totalActiveRevenue = activeContracts.reduce((sum, c) => sum + (c.value || 0), 0);
+    const totalActiveValue = activeContracts.reduce((sum, c) => sum + (c.value || 0), 0);
 
-    return { mrr, totalActiveRevenue };
+    return { mrr, totalActiveValue };
   }, [contracts]);
 
   const canManage = profile?.role === 'admin';
+
+  const handleEdit = (contract: Contract) => {
+    setSelectedContract(contract);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsFormOpen(false);
+    setSelectedContract(null);
+  };
+
+  const columns = getColumns(handleEdit);
 
   const renderContent = () => {
     if (isLoading) {
@@ -61,12 +66,11 @@ const FinancePage = () => {
           icon={<DollarSign className="w-12 h-12" />}
           title="Nenhum contrato encontrado"
           description="Crie o primeiro contrato a partir de uma oportunidade ganha ou manualmente para começar a monitorar sua receita."
-          cta={canManage ? { text: "Novo Contrato", onClick: () => setIsFormOpen(true) } : undefined}
+          cta={canManage ? { text: "Criar Primeiro Contrato", onClick: () => setIsFormOpen(true) } : undefined}
         />
       );
     }
-    // TODO: Replace with actual DataTable
-    return <div className="text-center p-8 bg-secondary rounded-lg">Tabela de Contratos será implementada aqui.</div>;
+    return <ContractsDataTable columns={columns} data={contracts} />;
   };
 
   return (
@@ -84,23 +88,18 @@ const FinancePage = () => {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <KpiCard title="Receita Mensal Recorrente (MRR)" value={currencyFormatter.format(mrr)} icon={<TrendingUp className="h-5 w-5 text-green-400" />} />
-        <KpiCard title="Receita Ativa Total" value={currencyFormatter.format(totalActiveRevenue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} />
+      <div className="grid gap-6 md:grid-cols-2">
+        <KpiCard title="Receita Mensal Recorrente (MRR)" value={currencyFormatter.format(mrr)} icon={<TrendingUp className="h-5 w-5 text-green-400" />} description="Soma dos contratos recorrentes mensais ativos." />
+        <KpiCard title="Valor Total Ativo" value={currencyFormatter.format(totalActiveValue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} description="Soma de todos os contratos com status 'ativo'." />
       </div>
 
       {renderContent()}
 
-      {/* TODO: Implement and enable ContractFormDialog
       <ContractFormDialog
         isOpen={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setSelectedContract(null);
-        }}
+        onClose={handleCloseDialog}
         contract={selectedContract}
       />
-      */}
     </div>
   );
 };
