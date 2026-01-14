@@ -23,6 +23,7 @@ import ReportsPage from "./pages/admin/ReportsPage";
 import FinancePage from "./pages/admin/FinancePage";
 import OnboardingPage from "./pages/admin/OnboardingPage";
 import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage";
+import SupportPage from "./pages/admin/SupportPage";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="financeiro" element={<FinancePage />} />
                 <Route path="onboarding" element={<OnboardingPage />} />
                 <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
+                <Route path="suporte" element={<SupportPage />} />
               </Route>
             </Route>
 

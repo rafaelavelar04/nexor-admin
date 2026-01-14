@@ -15,6 +15,7 @@ import {
   Target,
   DollarSign,
   ClipboardCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -31,6 +32,7 @@ const navItems = [
   { name: "Leads", href: "/admin/leads", icon: Users },
   { name: "Oportunidades", href: "/admin/opportunities", icon: Briefcase },
   { name: "Onboarding", href: "/admin/onboarding", icon: ClipboardCheck },
+  { name: "Suporte", href: "/admin/suporte", icon: LifeBuoy },
   { name: "Financeiro", href: "/admin/financeiro", icon: DollarSign },
   { name: "Metas", href: "/admin/metas", icon: Target },
   { name: "Empresas", href: "/admin/companies", icon: Building },
