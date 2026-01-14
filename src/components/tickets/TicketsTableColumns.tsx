@@ -1,10 +1,12 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type Ticket = {
   id: string;
@@ -29,11 +31,19 @@ const priorityStyles: Record<Ticket['priority'], string> = {
   alta: "bg-red-500/20 text-red-300 border-red-500/30",
 };
 
-export const getColumns = (onEdit: (ticket: Ticket) => void): ColumnDef<Ticket>[] => [
+export const getColumns = (
+  onEdit: (ticket: Ticket) => void,
+  onStatusChange: (ticketId: string, newStatus: string) => void
+): ColumnDef<Ticket>[] => [
   {
     accessorKey: "title",
     header: "Título",
-    cell: ({ row }) => <p className="font-medium truncate max-w-xs">{row.original.title}</p>,
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        {row.original.priority === 'alta' && <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />}
+        <p className="font-medium truncate max-w-xs">{row.original.title}</p>
+      </div>
+    ),
   },
   {
     accessorKey: "companies",
@@ -44,11 +54,26 @@ export const getColumns = (onEdit: (ticket: Ticket) => void): ColumnDef<Ticket>[
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <Badge className={`capitalize ${statusStyles[row.original.status]}`}>
-        {row.original.status.replace('_', ' ')}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const ticket = row.original;
+      const statuses = ['aberto', 'em_atendimento', 'resolvido', 'fechado'];
+      
+      return (
+        <Select
+          value={ticket.status}
+          onValueChange={(newStatus) => onStatusChange(ticket.id, newStatus)}
+        >
+          <SelectTrigger className={cn("w-[160px] capitalize border-0 focus:ring-0 focus:ring-offset-0", statusStyles[ticket.status])}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statuses.map(s => (
+              <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    },
     filterFn: (row, id, value) => value === row.getValue(id),
   },
   {
@@ -81,7 +106,7 @@ export const getColumns = (onEdit: (ticket: Ticket) => void): ColumnDef<Ticket>[
       <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(row.original)}>Editar</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(row.original)}>Ver / Editar Detalhes</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),

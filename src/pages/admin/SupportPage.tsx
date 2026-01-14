@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Loader2, PlusCircle, LifeBuoy } from 'lucide-react';
@@ -8,9 +8,11 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { Ticket, getColumns } from '@/components/tickets/TicketsTableColumns';
 import { TicketsDataTable } from '@/components/tickets/TicketsDataTable';
 import { TicketFormDialog } from '@/components/tickets/TicketFormDialog';
+import { showSuccess, showError } from '@/utils/toast';
 
 const SupportPage = () => {
   const { profile } = useSession();
+  const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
@@ -26,6 +28,28 @@ const SupportPage = () => {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ ticketId, newStatus }: { ticketId: string, newStatus: string }) => {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ 
+            status: newStatus,
+            closed_at: ['resolvido', 'fechado'].includes(newStatus) ? new Date().toISOString() : null 
+        })
+        .eq('id', ticketId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Status do ticket atualizado!");
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+    onError: (err: any) => showError(`Erro ao atualizar status: ${err.message}`),
+  });
+
+  const handleStatusChange = (ticketId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ ticketId, newStatus });
+  };
+
   const handleEdit = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setIsFormOpen(true);
@@ -36,7 +60,7 @@ const SupportPage = () => {
     setSelectedTicket(null);
   };
 
-  const columns = getColumns(handleEdit);
+  const columns = getColumns(handleEdit, handleStatusChange);
   const canManage = profile?.role === 'admin' || profile?.role === 'operacoes';
 
   const renderContent = () => {
@@ -50,7 +74,7 @@ const SupportPage = () => {
       return (
         <EmptyState
           icon={<LifeBuoy className="w-12 h-12" />}
-          title="Nenhum ticket de suporte"
+          title="Nenhum ticket aberto"
           description="Quando um cliente precisar de ajuda, você pode criar um ticket aqui para organizar o atendimento."
           cta={canManage ? { text: "Criar Primeiro Ticket", onClick: () => setIsFormOpen(true) } : undefined}
         />
