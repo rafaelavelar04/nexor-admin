@@ -21,14 +21,10 @@ const FinancePage = () => {
   const { data: contracts, isLoading, isError } = useQuery({
     queryKey: ['contracts'],
     queryFn: async () => {
+      // Simplified query to fetch only necessary fields and avoid RLS issues on joined tables
       const { data, error } = await supabase
         .from('contracts')
-        .select(`
-          *,
-          company:companies(nome),
-          opportunity:opportunities(titulo),
-          creator:profiles(full_name)
-        `)
+        .select('status, type, billing_cycle, value, created_at')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
