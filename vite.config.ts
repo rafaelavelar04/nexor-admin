@@ -7,13 +7,13 @@ export default defineConfig(() => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react()],
+  plugins: [react()],  // ✅ Removeu o plugin Dyad
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
+  build: {  // ✅ Adicionou configuração de build
     outDir: "dist",
     sourcemap: false,
   },
