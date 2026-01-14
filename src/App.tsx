@@ -21,6 +21,8 @@ import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 import ActivitiesPage from "./pages/admin/ActivitiesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import FinancePage from "./pages/admin/FinancePage";
+import OnboardingPage from "./pages/admin/OnboardingPage";
+import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
                 <Route path="activities" element={<ActivitiesPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="financeiro" element={<FinancePage />} />
+                <Route path="onboarding" element={<OnboardingPage />} />
+                <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
               </Route>
             </Route>
 
