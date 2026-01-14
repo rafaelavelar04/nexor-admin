@@ -19,7 +19,7 @@ const SupportPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, companies(id, nome), owner:profiles(full_name)')
+        .select('*, companies!company_id(id, nome), owner:profiles!owner_id(full_name)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
