@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, User, Layers, Edit, Calendar } from "lucide-react";
 import { getFollowUpStatus } from "@/lib/followupUtils";
 import { format } from "date-fns";
+import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from "@/lib/formatters";
 
 export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, canEdit: boolean }) => {
@@ -44,10 +45,10 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
           <Layers className="w-5 h-5 text-cyan-400" />
           <span>{opportunity.pipeline_stage?.nome || 'N/A'}</span>
         </div>
-        {followUpStatus && (
+        {followUpStatus && opportunity.proximo_followup && (
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-cyan-400" />
-            <span className="text-gray-300">{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy')}</span>
+            <span className="text-gray-300">{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy', { locale: ptBR })}</span>
             <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>
           </div>
         )}

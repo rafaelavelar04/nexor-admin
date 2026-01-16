@@ -6,6 +6,7 @@ import { DollarSign, User, Calendar, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getFollowUpStatus } from '@/lib/followupUtils';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/formatters';
 
 export type Opportunity = {
@@ -57,10 +58,10 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
                 <span>{opportunity.lead.empresa}</span>
               </div>
             )}
-            {followUpStatus && (
+            {followUpStatus && opportunity.proximo_followup && (
               <div className="flex items-center">
                 <Calendar className="w-3.5 h-3.5 mr-2" />
-                <span>{format(new Date(opportunity.proximo_followup!), 'dd/MM/yy')}</span>
+                <span>{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy', { locale: ptBR })}</span>
                 <Badge variant={followUpStatus.variant} className={`ml-auto text-xs ${followUpStatus.className}`}>{followUpStatus.text}</Badge>
               </div>
             )}

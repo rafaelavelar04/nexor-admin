@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { DatePicker } from '@/components/ui/date-picker';
 import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
 import { Combobox } from '@/components/ui/combobox';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 const statusOptions = [
@@ -215,7 +216,9 @@ const LeadFormPage = () => {
             <FormField control={form.control} name="whatsapp" render={({ field }) => (
               <FormItem>
                 <FormLabel>WhatsApp</FormLabel>
-                <FormControl><Input placeholder="(99) 99999-9999" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+                <FormControl>
+                  <PhoneInput value={field.value} onValueChange={field.onChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

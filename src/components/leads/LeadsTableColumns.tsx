@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { getFollowUpStatus } from "@/lib/followupUtils"
 
 type Tag = {
@@ -99,7 +100,7 @@ export const getColumns = (
       const followUpStatus = getFollowUpStatus(date as string | null);
       return (
         <div className="flex items-center gap-2">
-          <span>{date ? format(new Date(date as string), "dd/MM/yyyy") : "N/A"}</span>
+          <span>{date ? format(new Date(date as string), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}</span>
           {followUpStatus && <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>}
         </div>
       )
