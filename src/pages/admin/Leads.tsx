@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable';
 import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
-import { Loader2, Users } from 'lucide-react';
+import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
+import { Loader2, Users, Upload } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,8 @@ const LeadsPage = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
@@ -88,7 +90,7 @@ const LeadsPage = () => {
 
   const handleConvert = (lead: Lead) => {
     setSelectedLead(lead);
-    setIsModalOpen(true);
+    setIsConvertModalOpen(true);
   };
 
   const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
@@ -121,23 +123,33 @@ const LeadsPage = () => {
           <p className="text-muted-foreground mt-1">Gerencie e qualifique seus contatos de prospecção.</p>
         </div>
         {canManage && (
-          <Button onClick={() => navigate('/admin/leads/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Novo Lead
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={() => navigate('/admin/leads/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Novo Lead
+            </Button>
+          </div>
         )}
       </div>
       
       {renderContent()}
 
       <ConvertLeadModal
-        isOpen={isModalOpen}
+        isOpen={isConvertModalOpen}
         onClose={() => {
-          setIsModalOpen(false);
+          setIsConvertModalOpen(false);
           setSelectedLead(null);
         }}
         leadId={selectedLead?.id || null}
         leadName={selectedLead?.nome || null}
+      />
+      <LeadImportDialog
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
       />
     </div>
   );
