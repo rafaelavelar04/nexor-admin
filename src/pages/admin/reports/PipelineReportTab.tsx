@@ -1,8 +1,7 @@
 import { ReportCard } from '@/components/reports/ReportCard';
 import { EmptyState } from '@/components/reports/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+import { formatCurrency } from '@/lib/formatters';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -10,7 +9,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="p-2 text-sm bg-popover text-popover-foreground border border-border rounded-md shadow-lg">
         <p className="font-bold">{label}</p>
         <p style={{ color: payload[0].fill }}>{`Quantidade: ${payload[0].value}`}</p>
-        <p style={{ color: payload[1].fill }}>{`Valor: ${currencyFormatter.format(payload[1].value)}`}</p>
+        <p style={{ color: payload[1].fill }}>{`Valor: ${formatCurrency(payload[1].value)}`}</p>
       </div>
     );
   }
@@ -29,7 +28,7 @@ export const PipelineReportTab = ({ data }: { data: any }) => {
           <BarChart data={data.snapshot}>
             <XAxis dataKey="stage_name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
             <YAxis yAxisId="left" orientation="left" stroke="#8884d8" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => currencyFormatter.format(value)} />
+            <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar yAxisId="left" dataKey="count" name="Quantidade" fill="#8884d8" radius={[4, 4, 0, 0]} />

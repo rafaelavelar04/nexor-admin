@@ -5,6 +5,7 @@ import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/formatters";
 
 export type Contract = {
   id: string;
@@ -19,8 +20,6 @@ export type Contract = {
   company: { nome: string } | null;
   opportunity: { titulo: string } | null;
 };
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const statusStyles: Record<Contract['status'], string> = {
   ativo: "bg-green-500/20 text-green-300 border-green-500/30",
@@ -57,7 +56,7 @@ export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Cont
     ),
     cell: ({ row }) => {
       const { value, billing_cycle } = row.original;
-      const formattedValue = currencyFormatter.format(value);
+      const formattedValue = formatCurrency(value);
       const cycleText = billing_cycle === 'mensal' ? '/mês' : billing_cycle === 'anual' ? '/ano' : '';
       return <div className="font-medium">{formattedValue} {cycleText}</div>;
     },

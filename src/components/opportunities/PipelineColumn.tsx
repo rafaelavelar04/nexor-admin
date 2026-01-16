@@ -1,5 +1,6 @@
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { OpportunityCard, Opportunity } from './OpportunityCard';
+import { formatCurrency } from '@/lib/formatters';
 
 export type Stage = {
   id: string;
@@ -11,11 +12,6 @@ interface PipelineColumnProps {
   stage: Stage;
   opportunities: Opportunity[];
 }
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
 
 export const PipelineColumn = ({ stage, opportunities }: PipelineColumnProps) => {
   const opportunitiesIds = opportunities.map((opp) => opp.id);
@@ -36,7 +32,7 @@ export const PipelineColumn = ({ stage, opportunities }: PipelineColumnProps) =>
           <h3 className="font-bold text-base text-foreground">{stage.nome}</h3>
           <span className="text-xs font-semibold bg-secondary text-muted-foreground rounded-full px-2 py-0.5">{opportunities.length}</span>
         </div>
-        <p className="text-sm font-semibold text-primary">{currencyFormatter.format(totalValue)}</p>
+        <p className="text-sm font-semibold text-primary">{formatCurrency(totalValue)}</p>
       </div>
       <div className="flex-grow overflow-y-auto p-4">
         {opportunities.length === 0 ? (

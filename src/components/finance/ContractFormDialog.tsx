@@ -6,22 +6,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Loader2 } from 'lucide-react';
 import { Contract } from './ContractsTableColumns';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 const contractSchema = z.object({
   company_id: z.string().uuid("Selecione uma empresa."),
   opportunity_id: z.string().uuid("Selecione uma oportunidade.").optional().nullable(),
   type: z.enum(['recorrente', 'pontual']),
-  value: z.preprocess(
-    (val) => Number(String(val).replace(/[^0-9,]/g, "").replace(",", ".")),
-    z.number().positive({ message: "O valor deve ser positivo." })
-  ),
+  value: z.number().positive({ message: "O valor deve ser positivo." }),
   billing_cycle: z.enum(['mensal', 'anual']).optional().nullable(),
   status: z.enum(['ativo', 'pausado', 'cancelado', 'finalizado']),
   start_date: z.date({ required_error: "A data de início é obrigatória." }),
@@ -170,7 +167,9 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
             <FormField control={form.control} name="value" render={({ field }) => (
               <FormItem>
                 <FormLabel>Valor</FormLabel>
-                <FormControl><Input type="number" step="0.01" placeholder="R$ 1000,00" {...field} /></FormControl>
+                <FormControl>
+                  <CurrencyInput value={field.value} onValueChange={field.onChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

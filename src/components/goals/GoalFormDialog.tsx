@@ -10,12 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 const goalSchema = z.object({
-  valor: z.preprocess(
-    (val) => Number(String(val).replace(/[^0-9]/g, "")),
-    z.number().positive({ message: "O valor da meta deve ser positivo." })
-  ),
+  valor: z.number().positive({ message: "O valor da meta deve ser positivo." }),
   mes: z.coerce.number().min(1).max(12),
   ano: z.coerce.number().min(new Date().getFullYear() - 5).max(new Date().getFullYear() + 5),
   responsavel_id: z.string().uuid().nullable(),
@@ -31,7 +29,7 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const form = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
-      valor: 0,
+      valor: undefined,
       mes: new Date().getMonth() + 1,
       ano: currentYear,
       responsavel_id: null,
@@ -79,7 +77,9 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <FormField control={form.control} name="valor" render={({ field }) => (
               <FormItem>
                 <FormLabel>Valor da Meta</FormLabel>
-                <FormControl><Input type="number" placeholder="R$ 50000" {...field} /></FormControl>
+                <FormControl>
+                  <CurrencyInput value={field.value} onValueChange={field.onChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

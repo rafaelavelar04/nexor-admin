@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Target } from "lucide-react";
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+import { formatCurrency } from "@/lib/formatters";
 
 interface MonthlyGoalCardProps {
   title: string;
@@ -20,9 +19,9 @@ export const MonthlyGoalCard = ({ title, target, achieved }: MonthlyGoalCardProp
         <Target className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-foreground">{currencyFormatter.format(achieved)}</div>
+        <div className="text-2xl font-bold text-foreground">{formatCurrency(achieved)}</div>
         <p className="text-xs text-muted-foreground">
-          Meta de {currencyFormatter.format(target)}
+          Meta de {formatCurrency(target)}
         </p>
         <Progress value={percentage} className="mt-4 h-2" />
       </CardContent>

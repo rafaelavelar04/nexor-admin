@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export const GoalCard = ({ goal }: { goal: any }) => {
@@ -33,7 +33,7 @@ export const GoalCard = ({ goal }: { goal: any }) => {
       <CardContent className="space-y-2">
         <Progress value={percentage} className="h-3" />
         <div className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{currencyFormatter.format(achieved)}</span> / {currencyFormatter.format(valor)}
+          <span className="font-semibold text-foreground">{formatCurrency(achieved)}</span> / {formatCurrency(valor)}
           <span className="float-right font-medium text-primary">{percentage.toFixed(1)}%</span>
         </div>
       </CardContent>

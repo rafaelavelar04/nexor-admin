@@ -8,8 +8,8 @@ import { Loader2, Users, Briefcase, Target, CheckCircle, BarChart, DollarSign } 
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell, Line, LineChart } from 'recharts';
 import { subDays, startOfMonth, isWithinInterval, isBefore, isToday, startOfToday } from 'date-fns';
 import { useSession } from '@/contexts/SessionContext';
+import { formatCurrency } from '@/lib/formatters';
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard = () => {
@@ -84,8 +84,8 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard title="Leads Ativos" value={totalLeads} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
         <KpiCard title="Oportunidades Abertas" value={openOpportunities} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
-        <KpiCard title="Valor do Pipeline" value={currencyFormatter.format(pipelineValue)} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
-        <KpiCard title="Ganhos no Mês" value={currencyFormatter.format(wonThisMonthValue)} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
+        <KpiCard title="Valor do Pipeline" value={formatCurrency(pipelineValue)} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
+        <KpiCard title="Ganhos no Mês" value={formatCurrency(wonThisMonthValue)} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

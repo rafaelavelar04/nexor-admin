@@ -12,13 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 const opportunitySchema = z.object({
   titulo: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }),
-  valor_estimado: z.preprocess(
-    (val) => (val === "" ? null : Number(val)),
-    z.number().positive({ message: "O valor deve ser positivo." }).nullable()
-  ),
+  valor_estimado: z.number().positive({ message: "O valor deve ser positivo." }).optional().nullable(),
   responsavel_id: z.string().uuid({ message: "Selecione um responsável." }),
 });
 
@@ -141,7 +139,9 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
             <FormField control={form.control} name="valor_estimado" render={({ field }) => (
               <FormItem>
                 <FormLabel>Valor Estimado (opcional)</FormLabel>
-                <FormControl><Input type="number" {...field} value={field.value ?? ''} className="bg-gray-700 border-gray-600" /></FormControl>
+                <FormControl>
+                  <CurrencyInput value={field.value} onValueChange={field.onChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

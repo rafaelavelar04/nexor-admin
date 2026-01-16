@@ -6,6 +6,7 @@ import { DollarSign, User, Calendar, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getFollowUpStatus } from '@/lib/followupUtils';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/formatters';
 
 export type Opportunity = {
   id: string;
@@ -36,11 +37,6 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
     transform: CSS.Transform.toString(transform),
   };
 
-  const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-
   const followUpStatus = getFollowUpStatus(opportunity.proximo_followup);
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -70,7 +66,7 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
             )}
             <div className="flex items-center">
               <DollarSign className="w-3.5 h-3.5 mr-2" />
-              <span>{opportunity.valor_estimado ? currencyFormatter.format(opportunity.valor_estimado) : 'Não definido'}</span>
+              <span>{formatCurrency(opportunity.valor_estimado)}</span>
             </div>
             <div className="flex items-center">
               <User className="w-3.5 h-3.5 mr-2" />

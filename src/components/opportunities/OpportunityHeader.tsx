@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, User, Layers, Edit, Calendar } from "lucide-react";
 import { getFollowUpStatus } from "@/lib/followupUtils";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/formatters";
 
 export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, canEdit: boolean }) => {
-  const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
   const statusStyles = {
     open: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30 capitalize',
     won: 'bg-green-500/20 text-green-300 border-green-500/30 capitalize',
@@ -35,7 +34,7 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
         </div>
         <div className="flex items-center gap-2 text-gray-300">
           <DollarSign className="w-5 h-5 text-cyan-400" />
-          <span>{opportunity.valor_estimado ? currencyFormatter.format(opportunity.valor_estimado) : 'Não definido'}</span>
+          <span>{formatCurrency(opportunity.valor_estimado)}</span>
         </div>
         <div className="flex items-center gap-2 text-gray-300">
           <User className="w-5 h-5 text-cyan-400" />

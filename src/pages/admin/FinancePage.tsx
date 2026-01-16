@@ -9,8 +9,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { ContractsDataTable } from '@/components/finance/ContractsDataTable';
 import { getColumns, Contract } from '@/components/finance/ContractsTableColumns';
 import { ContractFormDialog } from '@/components/finance/ContractFormDialog';
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+import { formatCurrency } from '@/lib/formatters';
 
 const FinancePage = () => {
   const { profile } = useSession();
@@ -89,8 +88,8 @@ const FinancePage = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <KpiCard title="Receita Mensal Recorrente (MRR)" value={currencyFormatter.format(mrr)} icon={<TrendingUp className="h-5 w-5 text-green-400" />} description="Soma dos contratos recorrentes mensais ativos." />
-        <KpiCard title="Valor Total Ativo" value={currencyFormatter.format(totalActiveValue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} description="Soma de todos os contratos com status 'ativo'." />
+        <KpiCard title="Receita Mensal Recorrente (MRR)" value={formatCurrency(mrr)} icon={<TrendingUp className="h-5 w-5 text-green-400" />} description="Soma dos contratos recorrentes mensais ativos." />
+        <KpiCard title="Valor Total Ativo" value={formatCurrency(totalActiveValue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} description="Soma de todos os contratos com status 'ativo'." />
       </div>
 
       {renderContent()}

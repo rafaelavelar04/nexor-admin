@@ -3,9 +3,9 @@ import { EmptyState } from '@/components/reports/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { DollarSign, Percent, Trophy, XCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 
 const COLORS = ['#00C49F', '#FF8042'];
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const CustomTooltip = ({ active, payload, label, formatter }: any) => {
   if (active && payload && payload.length) {
@@ -36,7 +36,7 @@ export const OpportunitiesReportTab = ({ data }: { data: any }) => {
         <KpiCard title="Oportunidades Ganhas" value={wonCount} icon={<Trophy className="h-5 w-5 text-green-400" />} />
         <KpiCard title="Oportunidades Perdidas" value={lostCount} icon={<XCircle className="h-5 w-5 text-red-400" />} />
         <KpiCard title="Taxa de Conversão" value={`${conversionRate.toFixed(1)}%`} icon={<Percent className="h-5 w-5 text-cyan-400" />} />
-        <KpiCard title="Valor Total Ganho" value={currencyFormatter.format(totalValueWon)} icon={<DollarSign className="h-5 w-5 text-yellow-400" />} />
+        <KpiCard title="Valor Total Ganho" value={formatCurrency(totalValueWon)} icon={<DollarSign className="h-5 w-5 text-yellow-400" />} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ReportCard title="Oportunidades Ganhas vs. Perdidas">
@@ -60,8 +60,8 @@ export const OpportunitiesReportTab = ({ data }: { data: any }) => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.value_won_by_date}>
                 <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => currencyFormatter.format(value)} />
-                <Tooltip content={<CustomTooltip formatter={currencyFormatter.format} />} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} />
+                <Tooltip content={<CustomTooltip formatter={formatCurrency} />} />
                 <Bar dataKey="value" name="Valor Ganho" fill="#00C49F" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -73,8 +73,8 @@ export const OpportunitiesReportTab = ({ data }: { data: any }) => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.value_won_by_owner}>
                 <XAxis dataKey="full_name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => currencyFormatter.format(value)} />
-                <Tooltip content={<CustomTooltip formatter={currencyFormatter.format} />} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} />
+                <Tooltip content={<CustomTooltip formatter={formatCurrency} />} />
                 <Bar dataKey="value" name="Valor Ganho" fill="#8884d8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
