@@ -83,7 +83,7 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 <FormMessage />
               </FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="mes" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Mês</FormLabel>

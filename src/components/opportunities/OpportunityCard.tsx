@@ -52,7 +52,7 @@ export const OpportunityCard = ({ opportunity }: OpportunityCardProps) => {
   return (
     <div ref={setNodeRef} style={style} onClick={handleCardClick}>
       <Card className={`bg-secondary border-transparent hover:border-primary/50 cursor-pointer transition-all duration-200 ${isDragging ? 'opacity-50 ring-2 ring-primary shadow-lg' : 'shadow-sm'}`}>
-        <div {...attributes} {...listeners} className="p-3 cursor-grab">
+        <div {...attributes} {...listeners} className="p-4 cursor-grab">
           <p className="font-bold text-sm text-foreground mb-2">{opportunity.titulo}</p>
           <CardContent className="p-0 space-y-2 text-xs text-muted-foreground">
             {opportunity.lead && (

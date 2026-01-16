@@ -16,7 +16,7 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
   const followUpStatus = getFollowUpStatus(opportunity.proximo_followup);
 
   return (
-    <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
+    <div className="p-4 sm:p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
       <div className="flex flex-wrap justify-between items-start gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">{opportunity.titulo}</h1>

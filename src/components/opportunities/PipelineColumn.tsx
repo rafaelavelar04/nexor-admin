@@ -38,7 +38,7 @@ export const PipelineColumn = ({ stage, opportunities }: PipelineColumnProps) =>
         </div>
         <p className="text-sm font-semibold text-primary">{currencyFormatter.format(totalValue)}</p>
       </div>
-      <div className="flex-grow overflow-y-auto p-2">
+      <div className="flex-grow overflow-y-auto p-4">
         {opportunities.length === 0 ? (
           <div className="flex items-center justify-center h-full text-center p-4">
             <p className="text-sm text-muted-foreground">Arraste oportunidades para esta etapa.</p>
