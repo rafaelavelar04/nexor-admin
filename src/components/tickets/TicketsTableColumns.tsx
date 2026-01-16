@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 export type Ticket = {
   id: string;
@@ -32,7 +33,6 @@ const priorityStyles: Record<Ticket['priority'], string> = {
 };
 
 export const getColumns = (
-  onEdit: (ticket: Ticket) => void,
   onStatusChange: (ticketId: string, newStatus: string) => void
 ): ColumnDef<Ticket>[] => [
   {
@@ -102,13 +102,16 @@ export const getColumns = (
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(row.original)}>Ver / Editar Detalhes</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      const navigate = useNavigate();
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/admin/suporte/${row.original.id}`)}>Ver / Editar Detalhes</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   },
 ];

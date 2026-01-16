@@ -7,14 +7,13 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Ticket, getColumns } from '@/components/tickets/TicketsTableColumns';
 import { TicketsDataTable } from '@/components/tickets/TicketsDataTable';
-import { TicketFormDialog } from '@/components/tickets/TicketFormDialog';
 import { showSuccess, showError } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 const SupportPage = () => {
   const { profile } = useSession();
   const queryClient = useQueryClient();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const navigate = useNavigate();
 
   const { data: tickets, isLoading, isError } = useQuery<Ticket[]>({
     queryKey: ['tickets'],
@@ -50,17 +49,7 @@ const SupportPage = () => {
     updateStatusMutation.mutate({ ticketId, newStatus });
   };
 
-  const handleEdit = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsFormOpen(false);
-    setSelectedTicket(null);
-  };
-
-  const columns = getColumns(handleEdit, handleStatusChange);
+  const columns = getColumns(handleStatusChange);
   const canManage = profile?.role === 'admin' || profile?.role === 'operacoes';
 
   const renderContent = () => {
@@ -76,7 +65,7 @@ const SupportPage = () => {
           icon={<LifeBuoy className="w-12 h-12" />}
           title="Nenhum ticket aberto"
           description="Quando um cliente precisar de ajuda, você pode criar um ticket aqui para organizar o atendimento."
-          cta={canManage ? { text: "Criar Primeiro Ticket", onClick: () => setIsFormOpen(true) } : undefined}
+          cta={canManage ? { text: "Criar Primeiro Ticket", onClick: () => navigate('/admin/suporte/novo') } : undefined}
         />
       );
     }
@@ -91,7 +80,7 @@ const SupportPage = () => {
           <p className="text-muted-foreground mt-1">Gerencie os tickets e solicitações dos seus clientes.</p>
         </div>
         {canManage && (
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={() => navigate('/admin/suporte/novo')}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Novo Ticket
           </Button>
@@ -99,12 +88,6 @@ const SupportPage = () => {
       </div>
       
       {renderContent()}
-
-      <TicketFormDialog
-        isOpen={isFormOpen}
-        onClose={handleCloseDialog}
-        ticket={selectedTicket}
-      />
     </div>
   );
 };

@@ -24,6 +24,7 @@ import FinancePage from "./pages/admin/FinancePage";
 import OnboardingPage from "./pages/admin/OnboardingPage";
 import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage";
 import SupportPage from "./pages/admin/SupportPage";
+import TicketFormPage from "./pages/admin/support/TicketFormPage";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,8 @@ const App = () => (
                 <Route path="onboarding" element={<OnboardingPage />} />
                 <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
                 <Route path="suporte" element={<SupportPage />} />
+                <Route path="suporte/novo" element={<TicketFormPage />} />
+                <Route path="suporte/:id" element={<TicketFormPage />} />
               </Route>
             </Route>
 

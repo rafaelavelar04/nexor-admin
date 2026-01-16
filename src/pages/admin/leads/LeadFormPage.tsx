@@ -14,12 +14,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DatePicker } from '@/components/ui/date-picker';
 import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
+import { Combobox } from '@/components/ui/combobox';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
   "Em conversa", "Follow-up agendado", "Não interessado",
 ];
+
+const NICHOS = [
+  "Advocacia", "Agronegócio", "Agências de Marketing", "Alimentação / Restaurantes", "Arquitetura",
+  "Clínicas Médicas", "Clínicas Odontológicas", "Comércio Atacadista", "Comércio Varejista",
+  "Contabilidade", "Construtoras", "Educação / Cursos", "E-commerce", "Energia Solar",
+  "Engenharia", "Estética", "Farmácias", "Fintechs", "Imobiliárias", "Indústrias",
+  "Logística", "Marketing Digital", "Prestadores de Serviço", "SaaS", "Tecnologia da Informação",
+  "Transportes", "Turismo", "Outros"
+].sort();
+
+const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 
 interface UserProfile { id: string; full_name: string; }
 type Tag = { id: string; nome: string; cor: string | null; };
@@ -173,9 +185,16 @@ const LeadFormPage = () => {
               </FormItem>
             )} />
             <FormField control={form.control} name="nicho" render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Nicho</FormLabel>
-                <FormControl><Input placeholder="Nicho de mercado" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+                <Combobox
+                  options={nichoOptions}
+                  value={field.value}
+                  onChange={(value) => field.onChange(value)}
+                  placeholder="Selecione ou digite um nicho"
+                  searchPlaceholder="Pesquisar nicho..."
+                  emptyMessage="Nenhum nicho encontrado."
+                />
                 <FormMessage />
               </FormItem>
             )} />
