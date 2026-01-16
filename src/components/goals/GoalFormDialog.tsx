@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
 const goalSchema = z.object({
+  tipo: z.string().min(1, { message: "O tipo da meta é obrigatório." }),
   valor: z.number().positive({ message: "O valor da meta deve ser positivo." }),
   mes: z.coerce.number().min(1).max(12),
   ano: z.coerce.number().min(new Date().getFullYear() - 5).max(new Date().getFullYear() + 5),
@@ -22,6 +23,11 @@ const goalSchema = z.object({
 type GoalFormData = z.infer<typeof goalSchema>;
 type UserProfile = { id: string; full_name: string; };
 
+const monthNames = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
 export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
@@ -29,6 +35,7 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const form = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
+      tipo: '',
       valor: undefined,
       mes: new Date().getMonth() + 1,
       ano: currentYear,
@@ -74,6 +81,22 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="tipo" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo da Meta</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o tipo da meta" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="Financeira">Financeira</SelectItem>
+                    <SelectItem value="Comercial">Comercial</SelectItem>
+                    <SelectItem value="Leads">Leads</SelectItem>
+                    <SelectItem value="Receita">Receita</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
             <FormField control={form.control} name="valor" render={({ field }) => (
               <FormItem>
                 <FormLabel>Valor da Meta</FormLabel>
@@ -90,7 +113,9 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                   <Select onValueChange={(val) => field.onChange(Number(val))} defaultValue={String(field.value)}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {Array.from({ length: 12 }, (_, i) => <SelectItem key={i} value={String(i + 1)}>{i + 1}</SelectItem>)}
+                      {monthNames.map((month, index) => (
+                        <SelectItem key={index} value={String(index + 1)}>{month}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
