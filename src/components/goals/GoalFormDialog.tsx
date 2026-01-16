@@ -107,10 +107,13 @@ export const GoalFormDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <FormField control={form.control} name="responsavel_id" render={({ field }) => (
               <FormItem>
                 <FormLabel>Responsável (Opcional)</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Meta Global" /></SelectTrigger></FormControl>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'null' ? null : value)} 
+                  value={field.value ?? 'null'}
+                >
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione um responsável" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    <SelectItem value="">Meta Global</SelectItem>
+                    <SelectItem value="null">Meta Global</SelectItem>
                     {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>

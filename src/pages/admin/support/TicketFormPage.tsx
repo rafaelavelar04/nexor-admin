@@ -136,10 +136,13 @@ const TicketFormPage = () => {
             <FormField control={form.control} name="owner_id" render={({ field }) => (
               <FormItem>
                 <FormLabel>Responsável</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'null' ? null : value)} 
+                  value={field.value ?? 'null'}
+                >
                   <FormControl><SelectTrigger><SelectValue placeholder="Atribuir a..." /></SelectTrigger></FormControl>
                   <SelectContent>
-                    <SelectItem value="">Ninguém</SelectItem>
+                    <SelectItem value="null">Ninguém</SelectItem>
                     {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
