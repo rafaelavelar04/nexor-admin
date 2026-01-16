@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,11 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Loader2, Check, ChevronsUpDown, User, Briefcase, Building } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Activity } from './ActivitiesTableColumns';
+import { RelatedEntitySearch } from './RelatedEntitySearch';
 
 const activitySchema = z.object({
   type: z.string().min(1, "O tipo é obrigatório."),
@@ -105,7 +104,7 @@ export const ActivityFormDialog = ({ isOpen, onClose, activity }: ActivityFormDi
       };
 
       const { error } = isEditMode
-        ? await supabase.from('activities').update(submissionData).eq('id', activity.id)
+        ? await supabase.from('activities').update(submissionData).eq('id', activity!.id)
         : await supabase.from('activities').insert(submissionData);
       if (error) throw error;
     },
@@ -127,8 +126,65 @@ export const ActivityFormDialog = ({ isOpen, onClose, activity }: ActivityFormDi
           <DialogDescription>Registre uma nova interação ou evento.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* ... form fields will go here ... */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="type" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="Call">Call</SelectItem>
+                      <SelectItem value="Meeting">Meeting</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="user_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsável</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o responsável" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrição</FormLabel>
+                <FormControl><Textarea placeholder="Descreva a atividade..." {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="activity_date" render={({ field }) => (
+                <FormItem className="flex flex-col pt-2">
+                  <FormLabel className="mb-2">Data da Atividade</FormLabel>
+                  <DatePicker date={field.value} setDate={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="proximo_followup" render={({ field }) => (
+                <FormItem className="flex flex-col pt-2">
+                  <FormLabel className="mb-2">Próximo Follow-up (Opcional)</FormLabel>
+                  <DatePicker date={field.value} setDate={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="related_entity" render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Vincular a (Opcional)</FormLabel>
+                <RelatedEntitySearch value={field.value} onChange={field.onChange} />
+                <FormMessage />
+              </FormItem>
+            )} />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
               <Button type="submit" disabled={mutation.isPending}>
