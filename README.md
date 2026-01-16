@@ -1,1 +1,1 @@
-# Welcome to your Dyad app
+Site Admin Nexor Technology
