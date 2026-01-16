@@ -26,53 +26,66 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Efeito 1: Gerencia a sessão do Supabase (login, logout, refresh)
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        try {
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url, role, active')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) throw error;
-
-          if (profileData) {
-            // Success: User has a session and a profile.
-            setSession(session);
-            setUser(session.user);
-            setProfile(profileData);
-          } else {
-            // Failure: User has a session but no profile.
-            throw new Error("Perfil de usuário não encontrado.");
-          }
-        } catch (error: any) {
-          // Failure: Error fetching profile.
-          console.error("Falha ao buscar perfil, desconectando.", error);
-          showError("Não foi possível carregar seu perfil. Tente novamente.");
-          await supabase.auth.signOut();
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-      } else {
-        // No session.
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
+    // Pega a sessão inicial para acelerar o carregamento da UI
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[SessionContext] Initial session fetched.");
+      setSession(session);
+      setUser(session?.user ?? null);
     });
 
+    // Escuta por mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("[SessionContext] Auth state changed, event:", _event);
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    // Limpa a inscrição ao desmontar o componente
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
+  // Efeito 2: Busca o perfil do usuário sempre que o 'user' mudar
+  useEffect(() => {
+    // Se existe um usuário, busca o perfil
+    if (user) {
+      setLoading(true);
+      console.log(`[SessionContext] User detected (${user.id}), fetching profile...`);
+      
+      supabase
+        .from('profiles')
+        .select('full_name, avatar_url, role, active')
+        .eq('id', user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[SessionContext] Error fetching profile:", error.message);
+            showError("Não foi possível carregar seu perfil.");
+            setProfile(null); // Define o perfil como nulo em caso de erro
+          } else {
+            console.log("[SessionContext] Profile fetched successfully.");
+            setProfile(data);
+          }
+        })
+        .finally(() => {
+          // Garante que o loading sempre termine, mesmo com erro
+          console.log("[SessionContext] Profile fetch flow finished. Loading set to false.");
+          setLoading(false);
+        });
+    } else {
+      // Se não há usuário, não há perfil para buscar e o carregamento termina
+      console.log("[SessionContext] No user found. Clearing profile and finishing loading.");
+      setProfile(null);
+      setLoading(false);
+    }
+  }, [user]); // Este efeito roda apenas quando o objeto 'user' muda
+
   const logout = async () => {
     await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle state cleanup automatically.
+    // O onAuthStateChange cuidará de limpar os estados de session, user e profile.
   };
 
   const value = {
