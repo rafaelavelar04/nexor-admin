@@ -126,7 +126,7 @@ const LeadsPage = () => {
           <div className="flex items-center gap-2">
             <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
               <Upload className="w-4 h-4 mr-2" />
-              Importar
+              Importar Leads
             </Button>
             <Button onClick={() => navigate('/admin/leads/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <PlusCircle className="w-4 h-4 mr-2" />
