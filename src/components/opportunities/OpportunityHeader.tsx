@@ -16,14 +16,14 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
   const followUpStatus = getFollowUpStatus(opportunity.proximo_followup);
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
+    <div className="p-4 sm:p-6 bg-card border rounded-lg">
       <div className="flex flex-wrap justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">{opportunity.titulo}</h1>
-          <p className="text-gray-400 mt-1">Lead: {opportunity.lead?.nome} @ {opportunity.lead?.empresa}</p>
+          <h1 className="text-3xl font-bold text-foreground">{opportunity.titulo}</h1>
+          <p className="text-muted-foreground mt-1">Lead: {opportunity.lead?.nome} @ {opportunity.lead?.empresa}</p>
         </div>
         {canEdit && (
-          <Button variant="outline" className="bg-gray-700 border-gray-600 hover:bg-gray-600">
+          <Button variant="outline">
             <Edit className="w-4 h-4 mr-2" />
             Editar
           </Button>
@@ -33,22 +33,22 @@ export const OpportunityHeader = ({ opportunity, canEdit }: { opportunity: any, 
         <div className="flex items-center gap-2">
           <Badge className={statusStyles[opportunity.status]}>{opportunity.status}</Badge>
         </div>
-        <div className="flex items-center gap-2 text-gray-300">
-          <DollarSign className="w-5 h-5 text-cyan-400" />
+        <div className="flex items-center gap-2 text-foreground">
+          <DollarSign className="w-5 h-5 text-primary" />
           <span>{formatCurrency(opportunity.valor_estimado)}</span>
         </div>
-        <div className="flex items-center gap-2 text-gray-300">
-          <User className="w-5 h-5 text-cyan-400" />
+        <div className="flex items-center gap-2 text-foreground">
+          <User className="w-5 h-5 text-primary" />
           <span>{opportunity.responsavel?.full_name || 'N/A'}</span>
         </div>
-        <div className="flex items-center gap-2 text-gray-300">
-          <Layers className="w-5 h-5 text-cyan-400" />
+        <div className="flex items-center gap-2 text-foreground">
+          <Layers className="w-5 h-5 text-primary" />
           <span>{opportunity.pipeline_stage?.nome || 'N/A'}</span>
         </div>
         {followUpStatus && opportunity.proximo_followup && (
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-cyan-400" />
-            <span className="text-gray-300">{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy', { locale: ptBR })}</span>
+            <Calendar className="w-5 h-5 text-primary" />
+            <span className="text-foreground">{format(new Date(opportunity.proximo_followup), 'dd/MM/yyyy', { locale: ptBR })}</span>
             <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>
           </div>
         )}

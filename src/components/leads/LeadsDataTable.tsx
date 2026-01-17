@@ -91,12 +91,12 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           onChange={(event) =>
             table.getColumn("nome_empresa")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm bg-gray-800 border-gray-700"
+          className="max-w-sm"
         />
         <div className="flex items-center space-x-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="bg-gray-800 border-gray-700">
+              <Button variant="outline">
                 Tags {selectedTagIds.size > 0 && `(${selectedTagIds.size})`}
               </Button>
             </PopoverTrigger>
@@ -138,15 +138,15 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
             value={(table.getColumn("status")?.getFilterValue() as string) ?? ""}
             onValueChange={(value) => table.getColumn("status")?.setFilterValue(value === "all" ? "" : value)}
           >
-            <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 text-white border-gray-700">
+            <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
               {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={handleExport} variant="outline" className="bg-gray-800 border-gray-700">
+          <Button onClick={handleExport} variant="outline">
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
@@ -156,14 +156,14 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           </Button>
         </div>
       </div>
-      <div className="rounded-md border border-gray-700">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-gray-700 hover:bg-gray-800/50">
+              <TableRow key={headerGroup.id} className="border-border hover:bg-secondary/50">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="text-white">
+                    <TableHead key={header.id} className="text-foreground">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -182,7 +182,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-gray-700 hover:bg-gray-800/50"
+                  className="border-border hover:bg-secondary/50"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -207,7 +207,6 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           size="sm"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
-          className="bg-gray-800 border-gray-700"
         >
           Anterior
         </Button>
@@ -216,7 +215,6 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           size="sm"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
-          className="bg-gray-800 border-gray-700"
         >
           Próximo
         </Button>

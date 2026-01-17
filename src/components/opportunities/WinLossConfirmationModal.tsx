@@ -30,14 +30,14 @@ export const WinLossConfirmationModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Confirmar Ação</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription>
             Você tem certeza que deseja mover a oportunidade "{opportunityTitle}" para a etapa de "{targetStageName}"?
           </DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-gray-300">
+        <p className="text-sm text-muted-foreground">
           Esta ação irá {isWin ? "marcar a oportunidade como ganha" : "marcar a oportunidade como perdida"} e registrar a data de fechamento.
         </p>
         <DialogFooter>

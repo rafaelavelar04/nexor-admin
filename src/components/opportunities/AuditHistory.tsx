@@ -41,26 +41,26 @@ const generateChangeMessage = (log: any) => {
 
 export const AuditHistory = ({ auditLogs }: { auditLogs: any[] }) => {
   return (
-    <Card className="bg-gray-800/50 border-gray-700">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-lg text-white">Histórico de Alterações</CardTitle>
+        <CardTitle className="text-lg text-card-foreground">Histórico de Alterações</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {auditLogs.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Nenhum histórico encontrado.</p>
+            <p className="text-muted-foreground text-center py-4">Nenhum histórico encontrado.</p>
           ) : (
             auditLogs.map(log => (
               <div key={log.id} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-700 text-gray-400">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-muted-foreground">
                     <History className="w-5 h-5" />
                   </span>
-                  <div className="flex-grow w-px bg-gray-700"></div>
+                  <div className="flex-grow w-px bg-border"></div>
                 </div>
                 <div className="pb-6 w-full">
-                  <p className="text-sm text-gray-300">{generateChangeMessage(log)}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-foreground">{generateChangeMessage(log)}</p>
+                  <p className="text-xs text-muted-foreground">
                     {format(new Date(log.created_at), "dd MMM yyyy, HH:mm", { locale: ptBR })}
                   </p>
                 </div>

@@ -31,9 +31,9 @@ export const InternalNotes = ({ opportunity, canEdit }: { opportunity: any, canE
   };
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-lg text-white">Notas Internas</CardTitle>
+        <CardTitle className="text-lg text-card-foreground">Notas Internas</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
@@ -41,7 +41,6 @@ export const InternalNotes = ({ opportunity, canEdit }: { opportunity: any, canE
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Adicione notas sobre a negociação, próximos passos, etc."
           rows={8}
-          className="bg-gray-700 border-gray-600"
           disabled={!canEdit}
         />
         {canEdit && (

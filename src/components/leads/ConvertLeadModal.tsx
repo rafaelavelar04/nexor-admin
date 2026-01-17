@@ -120,10 +120,10 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Converter Lead em Oportunidade</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription>
             Crie uma nova oportunidade para o lead "{leadName}".
           </DialogDescription>
         </DialogHeader>
@@ -132,7 +132,7 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
             <FormField control={form.control} name="titulo" render={({ field }) => (
               <FormItem>
                 <FormLabel>Título da Oportunidade</FormLabel>
-                <FormControl><Input {...field} className="bg-gray-700 border-gray-600" /></FormControl>
+                <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -150,9 +150,9 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
                 <FormLabel>Responsável</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingUsers}>
                   <FormControl>
-                    <SelectTrigger className="bg-gray-700 border-gray-600"><SelectValue placeholder="Selecione um responsável" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Selecione um responsável" /></SelectTrigger>
                   </FormControl>
-                  <SelectContent className="bg-gray-800 text-white border-gray-700">
+                  <SelectContent>
                     {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
