@@ -27,6 +27,7 @@ import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage"
 import SupportPage from "./pages/admin/SupportPage";
 import TicketFormPage from "./pages/admin/support/TicketFormPage";
 import AlertsPage from "./pages/admin/AlertsPage";
+import InsightsPage from "./pages/admin/InsightsPage";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                   <Route path="companies/:id" element={<CompanyFormPage />} />
                   <Route path="activities" element={<ActivitiesPage />} />
                   <Route path="reports" element={<ReportsPage />} />
+                  <Route path="insights" element={<InsightsPage />} />
                   <Route path="financeiro" element={<FinancePage />} />
                   <Route path="onboarding" element={<OnboardingPage />} />
                   <Route path="onboarding/:id" element={<OnboardingDetailPage />} />

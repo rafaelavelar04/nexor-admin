@@ -3,7 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell,
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -21,6 +21,7 @@ const navItems = [
   { name: "Empresas", href: "/admin/companies", icon: Building },
   { name: "Atividades", href: "/admin/activities", icon: ClipboardList },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart },
+  { name: "Insights", href: "/admin/insights", icon: Lightbulb },
 ];
 
 const settingsNavItems = [
@@ -50,12 +51,6 @@ const AdminLayout = () => {
         >
           <item.icon className="w-5 h-5 mr-3" />
           <span>{item.name}</span>
-          {item.name === 'Alertas' && unreadAlertsCount > 0 && (
-            <span className="absolute left-7 top-1.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-          )}
         </NavLink>
       ))}
       <div className="flex-grow" />
