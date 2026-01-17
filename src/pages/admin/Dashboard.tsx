@@ -1,19 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { KpiCard } from '@/components/dashboard/KpiCard';
-import { DashboardChart } from '@/components/dashboard/DashboardChart';
 import { MonthlyGoalCard } from '@/components/dashboard/MonthlyGoalCard';
 import { Loader2, Users, Briefcase, Target, BarChart, DollarSign } from 'lucide-react';
-import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell } from 'recharts';
+import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell, Line, LineChart, Area, AreaChart, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { subDays, startOfMonth, isWithinInterval, format } from 'date-fns';
 import { useSession } from '@/contexts/SessionContext';
 import { formatCurrency } from '@/lib/formatters';
 import { useMemo } from 'react';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { ChartConfig, ChartConfigurator } from '@/components/dashboard/ChartConfigurator';
+import { Card, CardContent } from '@/components/ui/card';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="p-2 text-sm bg-popover text-popover-foreground border border-border rounded-md shadow-lg">
+        <p className="font-bold">{label}</p>
+        {payload.map((pld: any, index: number) => (
+          <p key={index} style={{ color: pld.color || pld.fill }}>{`${pld.name}: ${pld.value}`}</p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const Dashboard = () => {
   const { user } = useSession();
+
+  const [leadsChartConfig, setLeadsChartConfig] = useLocalStorage<ChartConfig>('dashboard-leads-chart-config', { type: 'bar' });
+  const [oppsChartConfig, setOppsChartConfig] = useLocalStorage<ChartConfig>('dashboard-opps-chart-config', { type: 'pie' });
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboardData'],
@@ -39,21 +58,18 @@ const Dashboard = () => {
 
   const processedData = useMemo(() => {
     if (!data) return null;
-
     const { leads, opportunities } = data;
     const now = new Date();
     const thirtyDaysAgo = subDays(now, 30);
 
-    // Leads nos últimos 30 dias
     const recentLeads = leads.filter(l => new Date(l.created_at) > thirtyDaysAgo);
     const leadsByDay = recentLeads.reduce((acc, lead) => {
       const day = format(new Date(lead.created_at), 'dd/MM');
       acc[day] = (acc[day] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    const leadsChartData = Object.keys(leadsByDay).map(day => ({ date: day, leads: leadsByDay[day] }));
+    const leadsChartData = Object.keys(leadsByDay).map(day => ({ date: day, Leads: leadsByDay[day] }));
 
-    // Oportunidades por etapa
     const openOpps = opportunities.filter(o => o.status === 'open');
     const oppsByStage = openOpps.reduce((acc, opp) => {
       const stageName = opp.pipeline_stage?.nome || 'Sem Etapa';
@@ -74,8 +90,6 @@ const Dashboard = () => {
   }
 
   const { opportunities, goals } = data;
-
-  // KPI Calculations
   const now = new Date();
   const startOfCurrentMonth = startOfMonth(now);
   
@@ -92,6 +106,34 @@ const Dashboard = () => {
   const userWonThisMonthValue = wonThisMonth
     .filter(o => o.responsavel_id === user?.id)
     .reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
+
+  const renderLeadsChart = () => {
+    if (!processedData?.leadsChartData || processedData.leadsChartData.length === 0) {
+      return <div className="flex items-center justify-center h-full text-muted-foreground">Sem dados de leads para exibir.</div>;
+    }
+    switch (leadsChartConfig.type) {
+      case 'line':
+        return <LineChart data={processedData.leadsChartData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} /><YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} /><Tooltip content={<CustomTooltip />} /><Line type="monotone" dataKey="Leads" stroke="hsl(var(--primary))" /></LineChart>;
+      case 'area':
+        return <AreaChart data={processedData.leadsChartData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} /><YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} /><Tooltip content={<CustomTooltip />} /><Area type="monotone" dataKey="Leads" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} /></AreaChart>;
+      case 'bar':
+      default:
+        return <RechartsBarChart data={processedData.leadsChartData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} /><YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="Leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /></RechartsBarChart>;
+    }
+  };
+
+  const renderOppsChart = () => {
+    if (!processedData?.oppsChartData || processedData.oppsChartData.length === 0) {
+      return <div className="flex items-center justify-center h-full text-muted-foreground">Sem oportunidades abertas.</div>;
+    }
+    switch (oppsChartConfig.type) {
+      case 'donut':
+        return <PieChart><Tooltip content={<CustomTooltip />} /><Pie data={processedData.oppsChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} label>{processedData.oppsChartData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend /></PieChart>;
+      case 'pie':
+      default:
+        return <PieChart><Tooltip content={<CustomTooltip />} /><Pie data={processedData.oppsChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>{processedData.oppsChartData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend /></PieChart>;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -113,25 +155,39 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardChart title="Novos Leads (Últimos 30 dias)">
-          <RechartsBarChart data={processedData?.leadsChartData}>
-            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-            <Tooltip cursor={{ fill: 'hsl(var(--secondary))' }} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
-            <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-          </RechartsBarChart>
-        </DashboardChart>
-        <DashboardChart title="Oportunidades por Etapa">
-          <PieChart>
-            <Pie data={processedData?.oppsChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-              {processedData?.oppsChartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
-            <Legend />
-          </PieChart>
-        </DashboardChart>
+        <Card className="col-span-1 lg:col-span-2">
+          <ChartConfigurator
+            title="Novos Leads (Últimos 30 dias)"
+            config={leadsChartConfig}
+            setConfig={setLeadsChartConfig}
+            availableTypes={[
+              { value: 'bar', label: 'Barras' },
+              { value: 'line', label: 'Linha' },
+              { value: 'area', label: 'Área' },
+            ]}
+          />
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              {renderLeadsChart()}
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card className="col-span-1 lg:col-span-2">
+          <ChartConfigurator
+            title="Oportunidades por Etapa"
+            config={oppsChartConfig}
+            setConfig={setOppsChartConfig}
+            availableTypes={[
+              { value: 'pie', label: 'Pizza' },
+              { value: 'donut', label: 'Donut' },
+            ]}
+          />
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              {renderOppsChart()}
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
