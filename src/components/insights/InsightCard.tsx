@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface InsightCardProps {
   title: string;
