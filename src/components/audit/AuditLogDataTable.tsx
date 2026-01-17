@@ -35,7 +35,7 @@ export function AuditLogDataTable<TData, TValue>({ columns, users }: DataTablePr
     queryFn: async () => {
       let query = supabase
         .from('audit_logs')
-        .select('*, user:profiles(full_name)', { count: 'exact' });
+        .select('*, user:profiles!user_id(full_name)', { count: 'exact' });
 
       if (debouncedSearchTerm) {
         query = query.or(`action.ilike.%${debouncedSearchTerm}%,entity.ilike.%${debouncedSearchTerm}%`);
