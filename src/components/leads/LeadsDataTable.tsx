@@ -11,11 +11,9 @@ import {
   useReactTable,
   RowSelectionState,
 } from "@tanstack/react-table"
-import { useNavigate } from "react-router-dom"
-import { PlusCircle, Check, Download } from "lucide-react"
+import { Check, Download } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { exportToCsv } from "@/lib/exportUtils"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -30,6 +28,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   rowSelection: RowSelectionState
   setRowSelection: React.Dispatch<React.SetStateAction<RowSelectionState>>
+  columnFilters: ColumnFiltersState
+  setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>
 }
 
 type Tag = { id: string; nome: string; };
@@ -39,10 +39,10 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
   data,
   rowSelection,
   setRowSelection,
+  columnFilters,
+  setColumnFilters,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const navigate = useNavigate();
 
   const { data: tags } = useQuery<Tag[]>({
     queryKey: ['tags'],
@@ -76,18 +76,6 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
   ];
 
   const selectedTagIds = (table.getColumn("tags")?.getFilterValue() as Set<string>) ?? new Set();
-
-  const handleExport = () => {
-    const filteredData = table.getFilteredRowModel().rows.map(row => {
-      const { responsavel, tags, ...rest } = row.original;
-      return {
-        ...rest,
-        responsavel_nome: responsavel?.full_name || 'N/A',
-        tags: tags.map(t => t.nome).join(', '),
-      };
-    });
-    exportToCsv(`leads_${new Date().toISOString().split('T')[0]}.csv`, filteredData);
-  };
 
   return (
     <div>
@@ -153,14 +141,6 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
               {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={handleExport} variant="outline" className="bg-gray-800 border-gray-700">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Button onClick={() => navigate('/admin/leads/novo')} className="bg-cyan-500 hover:bg-cyan-600 text-white">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Novo Lead
-          </Button>
         </div>
       </div>
       <div className="rounded-md border border-gray-700">

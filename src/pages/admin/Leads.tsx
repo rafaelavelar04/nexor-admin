@@ -6,15 +6,16 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload } from 'lucide-react';
+import { Loader2, Users, Upload, Download } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
-import { RowSelectionState } from '@tanstack/react-table';
+import { RowSelectionState, ColumnFiltersState } from '@tanstack/react-table';
 import { exportToCsv } from '@/lib/exportUtils';
+import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -27,6 +28,7 @@ const LeadsPage = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -175,7 +177,7 @@ const LeadsPage = () => {
     if (error) {
       return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro ao carregar os leads:</strong> {error}</div>;
     }
-    if (leads.length === 0) {
+    if (leads.length === 0 && columnFilters.length === 0) {
       return (
         <EmptyState
           icon={<Users className="w-12 h-12" />}
@@ -185,7 +187,7 @@ const LeadsPage = () => {
         />
       );
     }
-    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} />;
+    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />;
   };
 
   const statusOptions = [
@@ -194,7 +196,7 @@ const LeadsPage = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-20"> {/* Padding bottom for bulk action bar */}
+    <div className="space-y-6 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Leads</h1>
@@ -204,7 +206,7 @@ const LeadsPage = () => {
           <div className="flex items-center gap-2">
             <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
               <Upload className="w-4 h-4 mr-2" />
-              Importar Leads
+              Importar
             </Button>
             <Button onClick={() => navigate('/admin/leads/novo')} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <PlusCircle className="w-4 h-4 mr-2" />
@@ -214,6 +216,15 @@ const LeadsPage = () => {
         )}
       </div>
       
+      <div className="flex items-center justify-end">
+        <SavedFiltersManager 
+          pageKey="leads"
+          currentFilters={columnFilters}
+          onApplyFilter={setColumnFilters}
+          onClearFilters={() => setColumnFilters([])}
+        />
+      </div>
+
       {renderContent()}
 
       {canManage && (
