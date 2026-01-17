@@ -1,30 +1,13 @@
 import { Outlet, Link, NavLink } from "react-router-dom";
 import { useSession } from "@/contexts/SessionContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
-  Users,
-  Briefcase,
-  Building,
-  ClipboardList,
-  BarChart,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Target,
-  DollarSign,
-  ClipboardCheck,
-  LifeBuoy,
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon,
 } from "lucide-react";
 import { useState } from "react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
@@ -46,6 +29,7 @@ const settingsNavItems = [
 
 const AdminLayout = () => {
   const { profile, logout } = useSession();
+  const { setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const NavLinks = () => (
@@ -151,6 +135,21 @@ const AdminLayout = () => {
                   {profile?.role || "Role"}
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border" />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 mr-2" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 mr-2" />
+                  <span>Tema</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>Escuro</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>Sistema</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem onClick={logout} className="cursor-pointer focus:bg-destructive/10 focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />

@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SessionProvider } from "./contexts/SessionContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminLayout from "./components/layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
@@ -33,41 +34,43 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <SessionProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            
-            <Route element={<ProtectedRoute />}>
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="leads" element={<LeadsPage />} />
-                <Route path="leads/novo" element={<LeadFormPage />} />
-                <Route path="leads/:id" element={<LeadFormPage />} />
-                <Route path="opportunities" element={<Opportunities />} />
-                <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="metas" element={<GoalsPage />} />
-                <Route path="companies" element={<CompaniesPage />} />
-                <Route path="companies/novo" element={<CompanyFormPage />} />
-                <Route path="companies/:id" element={<CompanyFormPage />} />
-                <Route path="activities" element={<ActivitiesPage />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="financeiro" element={<FinancePage />} />
-                <Route path="onboarding" element={<OnboardingPage />} />
-                <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
-                <Route path="suporte" element={<SupportPage />} />
-                <Route path="suporte/novo" element={<TicketFormPage />} />
-                <Route path="suporte/:id" element={<TicketFormPage />} />
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <SessionProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              
+              <Route element={<ProtectedRoute />}>
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="leads" element={<LeadsPage />} />
+                  <Route path="leads/novo" element={<LeadFormPage />} />
+                  <Route path="leads/:id" element={<LeadFormPage />} />
+                  <Route path="opportunities" element={<Opportunities />} />
+                  <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="metas" element={<GoalsPage />} />
+                  <Route path="companies" element={<CompaniesPage />} />
+                  <Route path="companies/novo" element={<CompanyFormPage />} />
+                  <Route path="companies/:id" element={<CompanyFormPage />} />
+                  <Route path="activities" element={<ActivitiesPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="financeiro" element={<FinancePage />} />
+                  <Route path="onboarding" element={<OnboardingPage />} />
+                  <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
+                  <Route path="suporte" element={<SupportPage />} />
+                  <Route path="suporte/novo" element={<TicketFormPage />} />
+                  <Route path="suporte/:id" element={<TicketFormPage />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </SessionProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </SessionProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
