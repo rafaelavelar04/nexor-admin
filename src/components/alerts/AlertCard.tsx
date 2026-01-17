@@ -2,7 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertCircle, Archive, Check, Info, MoreHorizontal, Snooze, Trash2, Undo } from "lucide-react";
+import { AlertCircle, Archive, Check, Info, MoreHorizontal, Clock, Trash2, Undo } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -59,8 +59,8 @@ export const AlertCard = ({ alert, onMarkRead, onSnooze, onArchive }: AlertCardP
                   {alert.isRead ? <Undo className="w-4 h-4 mr-2" /> : <Check className="w-4 h-4 mr-2" />}
                   Marcar como {alert.isRead ? 'não lida' : 'lida'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onSnooze(alert.id, 1)}><Snooze className="w-4 h-4 mr-2" /> Adiar 1 hora</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onSnooze(alert.id, 24)}><Snooze className="w-4 h-4 mr-2" /> Adiar 1 dia</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSnooze(alert.id, 1)}><Clock className="w-4 h-4 mr-2" /> Adiar 1 hora</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSnooze(alert.id, 24)}><Clock className="w-4 h-4 mr-2" /> Adiar 1 dia</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onArchive(alert.id)}><Archive className="w-4 h-4 mr-2" /> Arquivar</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
