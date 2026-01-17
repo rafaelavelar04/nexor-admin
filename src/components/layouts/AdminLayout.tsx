@@ -12,7 +12,6 @@ import {
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Alertas", href: "/admin/alertas", icon: Bell },
   { name: "Leads", href: "/admin/leads", icon: Users },
   { name: "Oportunidades", href: "/admin/opportunities", icon: Briefcase },
   { name: "Onboarding", href: "/admin/onboarding", icon: ClipboardCheck },
