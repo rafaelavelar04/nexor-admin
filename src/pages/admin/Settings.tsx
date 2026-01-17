@@ -4,6 +4,7 @@ import ProfileSettings from "@/components/settings/ProfileSettings";
 import UserSettings from "@/components/settings/UserSettings";
 import SystemSettings from "@/components/settings/SystemSettings";
 import AuditLogSettings from "@/components/settings/AuditLogSettings";
+import WebhookSettings from "@/components/settings/WebhookSettings";
 import { ShieldAlert } from "lucide-react";
 
 const SettingsPage = () => {
@@ -20,11 +21,12 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-5">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
           <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
           <TabsTrigger value="audit" disabled={!isAdmin}>Auditoria</TabsTrigger>
+          <TabsTrigger value="webhooks" disabled={!isAdmin}>Webhooks</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile" className="mt-6">
@@ -41,6 +43,10 @@ const SettingsPage = () => {
 
         <TabsContent value="audit" className="mt-6">
           {isAdmin ? <AuditLogSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="webhooks" className="mt-6">
+          {isAdmin ? <WebhookSettings /> : <AccessDenied />}
         </TabsContent>
       </Tabs>
     </div>
