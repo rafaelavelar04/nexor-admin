@@ -123,7 +123,7 @@ export const getColumns = (
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-gray-800 text-white border-gray-700">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => navigate(`/admin/leads/${lead.id}`)} className="cursor-pointer">
               Editar
@@ -132,7 +132,7 @@ export const getColumns = (
               <Briefcase className="mr-2 h-4 w-4" />
               Converter em Oportunidade
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-gray-700" />
             <DropdownMenuItem onClick={() => handleDelete(lead.id)} className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-500/10">
               Excluir
             </DropdownMenuItem>

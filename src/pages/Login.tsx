@@ -4,16 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
 
 const Login = () => {
   const { session, loading } = useSession();
-  const { theme } = useTheme();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
       </div>
     );
   }
@@ -23,23 +21,39 @@ const Login = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <div className="w-full max-w-[420px] p-6 sm:p-8 space-y-6 bg-card rounded-lg shadow-lg border">
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4">
+      <div className="w-full max-w-[420px] p-6 sm:p-8 space-y-6 bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-lg border border-gray-700">
         <img 
           src="/branding/Nexor SF.png" 
           alt="Nexor Logo" 
           className="mx-auto h-auto w-[200px] md:w-[260px]" 
         />
-        <p className="text-center text-muted-foreground !-mt-2">
+        <p className="text-center text-gray-400 !-mt-2">
           Acesse seu painel administrativo
         </p>
         <Auth
           supabaseClient={supabase}
           view="sign_in"
           showLinks={false}
-          appearance={{ theme: ThemeSupa }}
-          theme={theme === 'dark' ? 'dark' : 'default'}
+          appearance={{ 
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: '#00bfff',
+                  brandAccent: '#00aeee',
+                  defaultButtonBackground: '#1f2937',
+                  defaultButtonBackgroundHover: '#374151',
+                  inputBackground: '#374151',
+                  inputBorder: '#4b5563',
+                  inputText: 'white',
+                  inputLabelText: '#d1d5db',
+                },
+              },
+            },
+          }}
           providers={[]}
+          theme="dark"
           localization={{
             variables: {
               sign_in: {

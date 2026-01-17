@@ -62,7 +62,7 @@ export const getColumns = (
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-gray-800 text-white border-gray-700">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => navigate(`/admin/companies/${company.id}`)} className="cursor-pointer">
               Editar

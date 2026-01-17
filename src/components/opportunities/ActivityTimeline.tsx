@@ -57,21 +57,21 @@ export const ActivityTimeline = ({ opportunityId, initialActivities, canEdit }: 
   const onSubmit = (data: ActivityFormData) => mutation.mutate(data);
 
   return (
-    <Card>
+    <Card className="bg-gray-800/50 border-gray-700">
       <CardHeader>
-        <CardTitle className="text-lg text-card-foreground">Atividades</CardTitle>
+        <CardTitle className="text-lg text-white">Atividades</CardTitle>
       </CardHeader>
       <CardContent>
         {canEdit && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-lg">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border border-gray-700 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Tipo de atividade" /></SelectTrigger></FormControl>
-                      <SelectContent>
+                      <FormControl><SelectTrigger className="bg-gray-700 border-gray-600"><SelectValue placeholder="Tipo de atividade" /></SelectTrigger></FormControl>
+                      <SelectContent className="bg-gray-800 text-white border-gray-700">
                         <SelectItem value="Email">Email</SelectItem>
                         <SelectItem value="Call">Call</SelectItem>
                         <SelectItem value="Meeting">Meeting</SelectItem>
@@ -83,7 +83,7 @@ export const ActivityTimeline = ({ opportunityId, initialActivities, canEdit }: 
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem className="md:col-span-2">
                     <FormLabel>Descrição</FormLabel>
-                    <FormControl><Textarea placeholder="Descreva a atividade..." {...field} /></FormControl>
+                    <FormControl><Textarea placeholder="Descreva a atividade..." {...field} className="bg-gray-700 border-gray-600" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -97,22 +97,22 @@ export const ActivityTimeline = ({ opportunityId, initialActivities, canEdit }: 
         )}
         <div className="space-y-6">
           {activities.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">Nenhuma atividade registrada.</p>
+            <p className="text-gray-500 text-center py-4">Nenhuma atividade registrada.</p>
           ) : (
             activities.map(activity => (
               <div key={activity.id} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-primary">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-700 text-cyan-400">
                     {activityIcons[activity.type as keyof typeof activityIcons] || <MessageSquare className="w-5 h-5" />}
                   </span>
-                  <div className="flex-grow w-px bg-border"></div>
+                  <div className="flex-grow w-px bg-gray-700"></div>
                 </div>
                 <div className="pb-6 w-full">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-400">
                     {activity.user?.full_name || 'Usuário'} • {format(new Date(activity.activity_date), "dd MMM yyyy, HH:mm", { locale: ptBR })}
                   </p>
-                  <p className="font-semibold text-foreground">{activity.type}</p>
-                  <p className="text-muted-foreground">{activity.description}</p>
+                  <p className="font-semibold text-white">{activity.type}</p>
+                  <p className="text-gray-300">{activity.description}</p>
                 </div>
               </div>
             ))

@@ -167,21 +167,21 @@ const LeadFormPage = () => {
         <ArrowLeft className="w-4 h-4 mr-2" />
         Voltar
       </Button>
-      <h1 className="text-3xl font-bold text-foreground mb-6">{isEditMode ? 'Editar Lead' : 'Novo Lead'}</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">{isEditMode ? 'Editar Lead' : 'Novo Lead'}</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="nome" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
-                <FormControl><Input placeholder="Nome do lead" {...field} /></FormControl>
+                <FormControl><Input placeholder="Nome do lead" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="empresa" render={({ field }) => (
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
-                <FormControl><Input placeholder="Empresa do lead" {...field} /></FormControl>
+                <FormControl><Input placeholder="Empresa do lead" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -202,14 +202,14 @@ const LeadFormPage = () => {
             <FormField control={form.control} name="cargo" render={({ field }) => (
               <FormItem>
                 <FormLabel>Cargo</FormLabel>
-                <FormControl><Input placeholder="Cargo do lead" {...field} /></FormControl>
+                <FormControl><Input placeholder="Cargo do lead" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="email" render={({ field }) => (
               <FormItem>
                 <FormLabel>Email</FormLabel>
-                <FormControl><Input placeholder="email@exemplo.com" {...field} /></FormControl>
+                <FormControl><Input placeholder="email@exemplo.com" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -227,9 +227,9 @@ const LeadFormPage = () => {
                 <FormLabel>Responsável</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Selecione um responsável" /></SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-700"><SelectValue placeholder="Selecione um responsável" /></SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-gray-800 text-white border-gray-700">
                     {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -241,9 +241,9 @@ const LeadFormPage = () => {
                 <FormLabel>Status</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Selecione um status" /></SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-700"><SelectValue placeholder="Selecione um status" /></SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-gray-800 text-white border-gray-700">
                     {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -270,7 +270,7 @@ const LeadFormPage = () => {
           <FormField control={form.control} name="observacoes" render={({ field }) => (
             <FormItem>
               <FormLabel>Observações</FormLabel>
-              <FormControl><Textarea placeholder="Observações sobre o lead" {...field} /></FormControl>
+              <FormControl><Textarea placeholder="Observações sobre o lead" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
