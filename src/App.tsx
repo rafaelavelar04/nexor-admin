@@ -26,6 +26,7 @@ import OnboardingPage from "./pages/admin/OnboardingPage";
 import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage";
 import SupportPage from "./pages/admin/SupportPage";
 import TicketFormPage from "./pages/admin/support/TicketFormPage";
+import AlertsPage from "./pages/admin/AlertsPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="suporte" element={<SupportPage />} />
                   <Route path="suporte/novo" element={<TicketFormPage />} />
                   <Route path="suporte/:id" element={<TicketFormPage />} />
+                  <Route path="alertas" element={<AlertsPage />} />
                 </Route>
               </Route>
 
