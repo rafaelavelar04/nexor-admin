@@ -3,6 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import UserSettings from "@/components/settings/UserSettings";
 import SystemSettings from "@/components/settings/SystemSettings";
+import AuditLogSettings from "@/components/settings/AuditLogSettings";
 import { ShieldAlert } from "lucide-react";
 
 const SettingsPage = () => {
@@ -19,10 +20,11 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-4">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
           <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
+          <TabsTrigger value="audit" disabled={!isAdmin}>Auditoria</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile" className="mt-6">
@@ -35,6 +37,10 @@ const SettingsPage = () => {
         
         <TabsContent value="system" className="mt-6">
           {isAdmin ? <SystemSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-6">
+          {isAdmin ? <AuditLogSettings /> : <AccessDenied />}
         </TabsContent>
       </Tabs>
     </div>
