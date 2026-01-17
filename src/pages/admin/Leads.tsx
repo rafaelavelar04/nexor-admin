@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable';
 import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
+import { BulkActionBar } from '@/components/leads/BulkActionBar';
 import { Loader2, Users, Upload } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
@@ -12,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
+import { RowSelectionState } from '@tanstack/react-table';
+import { exportToCsv } from '@/lib/exportUtils';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -23,6 +26,7 @@ const LeadsPage = () => {
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -65,6 +69,75 @@ const LeadsPage = () => {
 
     return () => { isMounted = false; };
   }, []);
+
+  const { data: users } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('id, full_name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ leadIds, updates }: { leadIds: string[], updates: Partial<Lead> }) => {
+      const { error } = await supabase.from('leads').update(updates).in('id', leadIds);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      showSuccess(`${variables.leadIds.length} leads atualizados com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      setRowSelection({});
+    },
+    onError: (error: any) => showError(`Erro: ${error.message}`),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (leadIds: string[]) => {
+      const { error } = await supabase.from('leads').delete().in('id', leadIds);
+      if (error) throw error;
+    },
+    onSuccess: (_, leadIds) => {
+      showSuccess(`${leadIds.length} leads excluídos com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      setRowSelection({});
+    },
+    onError: (error: any) => showError(`Erro: ${error.message}`),
+  });
+
+  const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => leads[parseInt(index, 10)]?.id).filter(Boolean), [rowSelection, leads]);
+
+  const handleBulkStatusChange = (status: string) => {
+    if (window.confirm(`Tem certeza que deseja alterar o status de ${selectedLeadIds.length} leads para "${status}"?`)) {
+      bulkUpdateMutation.mutate({ leadIds: selectedLeadIds, updates: { status } });
+    }
+  };
+
+  const handleBulkOwnerChange = (responsavel_id: string) => {
+    const ownerName = users?.find(u => u.id === responsavel_id)?.full_name || 'desconhecido';
+    if (window.confirm(`Tem certeza que deseja atribuir ${selectedLeadIds.length} leads para "${ownerName}"?`)) {
+      bulkUpdateMutation.mutate({ leadIds: selectedLeadIds, updates: { responsavel_id } });
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (window.confirm(`Tem certeza que deseja excluir ${selectedLeadIds.length} leads? Esta ação não pode ser desfeita.`)) {
+      bulkDeleteMutation.mutate(selectedLeadIds);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selectedData = Object.keys(rowSelection).map(index => {
+      const lead = leads[parseInt(index, 10)];
+      const { responsavel, tags, ...rest } = lead;
+      return {
+        ...rest,
+        responsavel_nome: responsavel?.full_name || 'N/A',
+        tags: tags.map(t => t.nome).join(', '),
+      };
+    });
+    exportToCsv(`leads_selecionados_${new Date().toISOString().split('T')[0]}.csv`, selectedData);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -112,11 +185,16 @@ const LeadsPage = () => {
         />
       );
     }
-    return <LeadsDataTable columns={columns} data={leads} />;
+    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} />;
   };
 
+  const statusOptions = [
+    "Não contatado", "Primeiro contato feito", "Sem resposta", 
+    "Em conversa", "Follow-up agendado", "Não interessado"
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20"> {/* Padding bottom for bulk action bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Leads</h1>
@@ -137,6 +215,20 @@ const LeadsPage = () => {
       </div>
       
       {renderContent()}
+
+      {canManage && (
+        <BulkActionBar
+          selectedCount={selectedLeadIds.length}
+          onStatusChange={handleBulkStatusChange}
+          onOwnerChange={handleBulkOwnerChange}
+          onAddTags={() => alert("Funcionalidade 'Adicionar Tags' em desenvolvimento.")}
+          onRemoveTags={() => alert("Funcionalidade 'Remover Tags' em desenvolvimento.")}
+          onExport={handleBulkExport}
+          onDelete={handleBulkDelete}
+          statusOptions={statusOptions}
+          users={users || []}
+        />
+      )}
 
       <ConvertLeadModal
         isOpen={isConvertModalOpen}
