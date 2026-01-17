@@ -2,13 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { DashboardChart } from '@/components/dashboard/DashboardChart';
-import { FollowUpListCard } from '@/components/dashboard/FollowUpListCard';
 import { MonthlyGoalCard } from '@/components/dashboard/MonthlyGoalCard';
-import { Loader2, Users, Briefcase, Target, CheckCircle, BarChart, DollarSign } from 'lucide-react';
-import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell, Line, LineChart } from 'recharts';
-import { subDays, startOfMonth, isWithinInterval, isBefore, isToday, startOfToday } from 'date-fns';
+import { Loader2, Users, Briefcase, Target, BarChart, DollarSign } from 'lucide-react';
+import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell } from 'recharts';
+import { subDays, startOfMonth, isWithinInterval, format } from 'date-fns';
 import { useSession } from '@/contexts/SessionContext';
 import { formatCurrency } from '@/lib/formatters';
+import { useMemo } from 'react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -18,10 +18,10 @@ const Dashboard = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboardData'],
     queryFn: async () => {
-      const { data: leads, error: leadsError } = await supabase.from('leads').select('*, responsavel:profiles(full_name)');
+      const { data: leads, error: leadsError } = await supabase.from('leads').select('created_at');
       if (leadsError) throw leadsError;
 
-      const { data: opportunities, error: oppsError } = await supabase.from('opportunities').select('*, pipeline_stage:pipeline_stages(nome, ordem), responsavel:profiles(full_name)');
+      const { data: opportunities, error: oppsError } = await supabase.from('opportunities').select('status, valor_estimado, closed_at, responsavel_id, pipeline_stage:pipeline_stages(nome)');
       if (oppsError) throw oppsError;
 
       const currentMonth = new Date().getMonth() + 1;
@@ -37,24 +37,52 @@ const Dashboard = () => {
     }
   });
 
+  const processedData = useMemo(() => {
+    if (!data) return null;
+
+    const { leads, opportunities } = data;
+    const now = new Date();
+    const thirtyDaysAgo = subDays(now, 30);
+
+    // Leads nos últimos 30 dias
+    const recentLeads = leads.filter(l => new Date(l.created_at) > thirtyDaysAgo);
+    const leadsByDay = recentLeads.reduce((acc, lead) => {
+      const day = format(new Date(lead.created_at), 'dd/MM');
+      acc[day] = (acc[day] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const leadsChartData = Object.keys(leadsByDay).map(day => ({ date: day, leads: leadsByDay[day] }));
+
+    // Oportunidades por etapa
+    const openOpps = opportunities.filter(o => o.status === 'open');
+    const oppsByStage = openOpps.reduce((acc, opp) => {
+      const stageName = opp.pipeline_stage?.nome || 'Sem Etapa';
+      acc[stageName] = (acc[stageName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const oppsChartData = Object.keys(oppsByStage).map(name => ({ name, value: oppsByStage[name] }));
+
+    return { leadsChartData, oppsChartData };
+  }, [data]);
+
   if (isLoading) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-cyan-400" /></div>;
+    return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   if (isError || !data) {
-    return <div className="text-red-400">Erro ao carregar os dados do dashboard.</div>;
+    return <div className="text-destructive">Erro ao carregar os dados do dashboard.</div>;
   }
 
-  const { leads, opportunities, goals } = data;
+  const { opportunities, goals } = data;
 
-  // KPI & Goal Calculations
+  // KPI Calculations
   const now = new Date();
   const startOfCurrentMonth = startOfMonth(now);
   
   const wonThisMonth = opportunities.filter(o => o.status === 'won' && o.closed_at && isWithinInterval(new Date(o.closed_at), { start: startOfCurrentMonth, end: now }));
   const wonThisMonthValue = wonThisMonth.reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
 
-  const totalLeads = leads.length;
+  const totalLeads = data.leads.length;
   const openOpportunities = opportunities.filter(o => o.status === 'open').length;
   const pipelineValue = opportunities.filter(o => o.status === 'open').reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
 
@@ -64,15 +92,6 @@ const Dashboard = () => {
   const userWonThisMonthValue = wonThisMonth
     .filter(o => o.responsavel_id === user?.id)
     .reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
-
-  // Follow-up Calculations
-  const today = startOfToday();
-  const allFollowUps = [
-    ...leads.filter(l => l.proximo_followup).map(l => ({ id: l.id, type: 'Lead' as const, name: l.nome, responsible: l.responsavel?.full_name || 'N/A', date: l.proximo_followup! })),
-    ...opportunities.filter(o => o.proximo_followup).map(o => ({ id: o.id, type: 'Oportunidade' as const, name: o.titulo, responsible: o.responsavel?.full_name || 'N/A', date: o.proximo_followup! }))
-  ];
-  const overdueFollowUps = allFollowUps.filter(f => isBefore(new Date(f.date), today));
-  const todayFollowUps = allFollowUps.filter(f => isToday(new Date(f.date)));
 
   return (
     <div className="space-y-6">
@@ -94,8 +113,25 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FollowUpListCard title="Follow-ups Atrasados" items={overdueFollowUps} badgeText="Atrasados" badgeClass="bg-red-500/80 text-white" />
-        <FollowUpListCard title="Follow-ups de Hoje" items={todayFollowUps} badgeText="para Hoje" badgeClass="bg-yellow-500/80 text-white" />
+        <DashboardChart title="Novos Leads (Últimos 30 dias)">
+          <RechartsBarChart data={processedData?.leadsChartData}>
+            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+            <Tooltip cursor={{ fill: 'hsl(var(--secondary))' }} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+            <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+          </RechartsBarChart>
+        </DashboardChart>
+        <DashboardChart title="Oportunidades por Etapa">
+          <PieChart>
+            <Pie data={processedData?.oppsChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+              {processedData?.oppsChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+            <Legend />
+          </PieChart>
+        </DashboardChart>
       </div>
     </div>
   );

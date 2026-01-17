@@ -9,9 +9,9 @@ interface DashboardChartProps {
 
 export const DashboardChart = ({ title, children }: DashboardChartProps) => {
   return (
-    <Card className="bg-gray-800/50 border-gray-700 text-white col-span-1 lg:col-span-2">
+    <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
-        <CardTitle className="text-base font-medium text-gray-300">{title}</CardTitle>
+        <CardTitle className="text-base font-medium text-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
