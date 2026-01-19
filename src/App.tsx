@@ -28,6 +28,7 @@ import SupportPage from "./pages/admin/SupportPage";
 import TicketFormPage from "./pages/admin/support/TicketFormPage";
 import AlertsPage from "./pages/admin/AlertsPage";
 import InsightsPage from "./pages/admin/InsightsPage";
+import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
                   <Route path="opportunities" element={<Opportunities />} />
                   <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route path="webhooks/:id/logs" element={<WebhookLogsPage />} />
                   <Route path="metas" element={<GoalsPage />} />
                   <Route path="companies" element={<CompaniesPage />} />
                   <Route path="companies/novo" element={<CompanyFormPage />} />

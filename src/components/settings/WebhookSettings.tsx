@@ -12,9 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useNavigate } from 'react-router-dom';
 
 const WebhookSettings = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
 
@@ -103,7 +105,7 @@ const WebhookSettings = () => {
                   <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleEdit(webhook)}>Editar</DropdownMenuItem>
-                    <DropdownMenuItem disabled>Ver Logs</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/admin/webhooks/${webhook.id}/logs`)}>Ver Logs</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleDelete(webhook.id)} className="text-destructive">Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
