@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from "@/lib/formatters";
 import { CheckCircle, AlertCircle, XCircle, Loader2 } from "lucide-react";
 import { isBefore, startOfToday } from 'date-fns';
+import { DatePicker } from "../ui/date-picker";
 
 type Receivable = {
   id: string;
@@ -19,7 +20,9 @@ type Receivable = {
 interface ContractReceivablesTableProps {
   receivables: Receivable[];
   onMarkAsPaid: (id: string, isPaid: boolean) => void;
-  isMutating: boolean;
+  isUpdatingStatus: boolean;
+  onUpdateDueDate: (id: string, date: Date) => void;
+  updatingReceivableId: string | null;
 }
 
 const statusConfig = {
@@ -28,7 +31,7 @@ const statusConfig = {
   atrasado: { icon: <XCircle className="h-4 w-4 text-red-400" />, label: "Atrasado", className: "bg-red-500/20 text-red-300 border-red-500/30" },
 };
 
-export const ContractReceivablesTable = ({ receivables, onMarkAsPaid, isMutating }: ContractReceivablesTableProps) => {
+export const ContractReceivablesTable = ({ receivables, onMarkAsPaid, isUpdatingStatus, onUpdateDueDate, updatingReceivableId }: ContractReceivablesTableProps) => {
   if (receivables.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-4">Nenhuma parcela gerada para este contrato.</p>;
   }
@@ -50,21 +53,32 @@ export const ContractReceivablesTable = ({ receivables, onMarkAsPaid, isMutating
           const status = isOverdue ? 'atrasado' : item.status;
           const config = statusConfig[status];
           const isPaid = item.status === 'pago';
+          const isUpdatingThisDate = updatingReceivableId === item.id;
 
           return (
             <TableRow key={item.id}>
               <TableCell><Badge className={config.className}>{config.icon}<span className="ml-2">{config.label}</span></Badge></TableCell>
               <TableCell>{item.installment_number || 'Única'}</TableCell>
-              <TableCell>{format(new Date(item.due_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+              <TableCell>
+                <div className="flex items-center">
+                  <DatePicker
+                    date={new Date(item.due_date)}
+                    setDate={(date) => { if (date) onUpdateDueDate(item.id, date) }}
+                    buttonClassName="h-8"
+                    disabled={isUpdatingStatus || !!updatingReceivableId}
+                  />
+                  {isUpdatingThisDate && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                </div>
+              </TableCell>
               <TableCell>{formatCurrency(item.amount)}</TableCell>
               <TableCell className="text-right">
                 <Button 
                   variant={isPaid ? "outline" : "default"} 
                   size="sm"
                   onClick={() => onMarkAsPaid(item.id, !isPaid)}
-                  disabled={isMutating}
+                  disabled={isUpdatingStatus || !!updatingReceivableId}
                 >
-                  {isMutating ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPaid ? 'Marcar como Pendente' : 'Marcar como Pago')}
+                  {isUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPaid ? 'Marcar como Pendente' : 'Marcar como Pago')}
                 </Button>
               </TableCell>
             </TableRow>

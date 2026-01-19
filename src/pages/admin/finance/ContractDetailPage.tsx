@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/formatters';
 import { ContractReceivablesTable } from '@/components/finance/ContractReceivablesTable';
 import { showSuccess, showError } from '@/utils/toast';
+import { useState } from 'react';
 
 const statusStyles: Record<string, string> = {
   ativo: "bg-green-500/20 text-green-300 border-green-500/30",
@@ -22,6 +23,7 @@ const ContractDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [updatingReceivableId, setUpdatingReceivableId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['contractDetail', id],
@@ -36,7 +38,7 @@ const ContractDetailPage = () => {
     enabled: !!id,
   });
 
-  const receivableMutation = useMutation({
+  const receivableStatusMutation = useMutation({
     mutationFn: async ({ receivableId, isPaid }: { receivableId: string, isPaid: boolean }) => {
       const status = isPaid ? 'pago' : 'pendente';
       const paid_at = isPaid ? new Date().toISOString() : null;
@@ -49,6 +51,24 @@ const ContractDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ['receivables'] });
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
+  });
+
+  const updateDueDateMutation = useMutation({
+    mutationFn: async ({ receivableId, newDate }: { receivableId: string, newDate: Date }) => {
+      const { error } = await supabase.from('receivables').update({ due_date: newDate.toISOString().split('T')[0] }).eq('id', receivableId);
+      if (error) throw error;
+    },
+    onMutate: ({ receivableId }) => {
+      setUpdatingReceivableId(receivableId);
+    },
+    onSuccess: () => {
+      showSuccess("Data de vencimento atualizada!");
+      queryClient.invalidateQueries({ queryKey: ['contractDetail', id] });
+    },
+    onError: (error: any) => showError(`Erro ao atualizar data: ${error.message}`),
+    onSettled: () => {
+      setUpdatingReceivableId(null);
+    },
   });
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
@@ -81,8 +101,10 @@ const ContractDetailPage = () => {
         <CardContent>
           <ContractReceivablesTable 
             receivables={data.receivables || []} 
-            onMarkAsPaid={(receivableId, isPaid) => receivableMutation.mutate({ receivableId, isPaid })}
-            isMutating={receivableMutation.isPending}
+            onMarkAsPaid={(receivableId, isPaid) => receivableStatusMutation.mutate({ receivableId, isPaid })}
+            isUpdatingStatus={receivableStatusMutation.isPending}
+            onUpdateDueDate={(receivableId, newDate) => updateDueDateMutation.mutate({ receivableId, newDate })}
+            updatingReceivableId={updatingReceivableId}
           />
         </CardContent>
       </Card>
