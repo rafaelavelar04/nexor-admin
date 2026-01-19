@@ -16,10 +16,11 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
 import { Combobox } from '@/components/ui/combobox';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { DecisoresFormSection } from '@/components/leads/DecisoresFormSection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NICHOS } from '@/lib/constants';
+import { PlaybookManager } from '@/components/leads/PlaybookManager';
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
@@ -142,9 +143,12 @@ const LeadFormPage = () => {
 
   return (
     <FormProvider {...form}>
-      <div>
+      <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate('/admin/leads')} className="mb-4"><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button>
         <h1 className="text-3xl font-bold text-white mb-6">{isEditMode ? 'Editar Lead' : 'Novo Lead'}</h1>
+        
+        {isEditMode && leadData && <PlaybookManager lead={leadData} />}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
