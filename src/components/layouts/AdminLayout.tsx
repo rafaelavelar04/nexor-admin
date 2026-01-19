@@ -116,7 +116,7 @@ const AdminLayout = () => {
         </Button>
       </aside>
 
-      <div className={cn("flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out", isCollapsed ? "md:ml-20" : "md:ml-64")}>
+      <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center justify-between p-4 bg-card border-b border-border md:justify-end">
           <button
             onClick={() => setSidebarOpen(true)}
