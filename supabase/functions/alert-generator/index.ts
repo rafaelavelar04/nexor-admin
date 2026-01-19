@@ -83,6 +83,20 @@ serve(async (req) => {
     const userMap = new Map(users.map((u: any) => [u.id, { role: u.role, email: u.user_email?.email }]));
     const admins = users.filter((u: any) => u.role === 'admin');
 
+    const { data: allPreferences, error: prefsError } = await supabaseAdmin.from('user_notification_preferences').select('user_id, alert_rule_id, in_app_enabled, email_enabled');
+    if (prefsError) throw prefsError;
+
+    const prefsMap = new Map<string, Map<string, { in_app: boolean; email: boolean }>>();
+    for (const pref of allPreferences) {
+      if (!prefsMap.has(pref.user_id)) {
+        prefsMap.set(pref.user_id, new Map());
+      }
+      prefsMap.get(pref.user_id)!.set(pref.alert_rule_id, {
+        in_app: pref.in_app_enabled,
+        email: pref.email_enabled,
+      });
+    }
+
     let alertsToCreate: any[] = [];
     let emailsToSend: any[] = [];
 
@@ -113,10 +127,16 @@ serve(async (req) => {
           }
 
           for (const userId of targetUserIds) {
-            alertsToCreate.push({ user_id: userId, rule_id: rule.id, title: issue.title, description: issue.description, link: issue.link });
+            const userPrefs = prefsMap.get(userId)?.get(rule.id);
+            const inAppEnabled = userPrefs?.in_app ?? true;
+            const emailEnabled = userPrefs?.email ?? true;
+
+            if (inAppEnabled) {
+              alertsToCreate.push({ user_id: userId, rule_id: rule.id, title: issue.title, description: issue.description, link: issue.link });
+            }
             
             const user = userMap.get(userId);
-            if (user && user.email) {
+            if (emailEnabled && user && user.email) {
               emailsToSend.push({
                 to: user.email,
                 subject: `Alerta Nexor: ${issue.title}`,

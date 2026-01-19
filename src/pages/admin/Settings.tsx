@@ -8,6 +8,7 @@ import WebhookSettings from "@/components/settings/WebhookSettings";
 import ActiveSessionsSettings from "@/components/settings/ActiveSessionsSettings";
 import RoleSettings from "@/components/settings/RoleSettings";
 import AlertRulesSettings from "@/components/settings/AlertRulesSettings";
+import NotificationSettings from "@/components/settings/NotificationSettings";
 import { ShieldAlert } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
@@ -27,8 +28,9 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} onValueChange={(tab) => setSearchParams({ tab })} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-9">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
+          <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
           <TabsTrigger value="roles" disabled={!isAdmin}>Permissões</TabsTrigger>
           <TabsTrigger value="sessions" disabled={!isAdmin}>Sessões</TabsTrigger>
@@ -40,6 +42,10 @@ const SettingsPage = () => {
         
         <TabsContent value="profile" className="mt-6">
           <ProfileSettings />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-6">
+          <NotificationSettings />
         </TabsContent>
         
         <TabsContent value="users" className="mt-6">
