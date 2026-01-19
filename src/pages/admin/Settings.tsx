@@ -7,6 +7,7 @@ import AuditLogSettings from "@/components/settings/AuditLogSettings";
 import WebhookSettings from "@/components/settings/WebhookSettings";
 import ActiveSessionsSettings from "@/components/settings/ActiveSessionsSettings";
 import RoleSettings from "@/components/settings/RoleSettings";
+import AlertRulesSettings from "@/components/settings/AlertRulesSettings";
 import { ShieldAlert } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
@@ -26,11 +27,12 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} onValueChange={(tab) => setSearchParams({ tab })} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-8">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
           <TabsTrigger value="roles" disabled={!isAdmin}>Permissões</TabsTrigger>
           <TabsTrigger value="sessions" disabled={!isAdmin}>Sessões</TabsTrigger>
+          <TabsTrigger value="alerts" disabled={!isAdmin}>Alertas</TabsTrigger>
           <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
           <TabsTrigger value="audit" disabled={!isAdmin}>Auditoria</TabsTrigger>
           <TabsTrigger value="webhooks" disabled={!isAdmin}>Webhooks</TabsTrigger>
@@ -50,6 +52,10 @@ const SettingsPage = () => {
 
         <TabsContent value="sessions" className="mt-6">
           {isAdmin ? <ActiveSessionsSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="alerts" className="mt-6">
+          {isAdmin ? <AlertRulesSettings /> : <AccessDenied />}
         </TabsContent>
         
         <TabsContent value="system" className="mt-6">
