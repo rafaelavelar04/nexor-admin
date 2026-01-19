@@ -18,6 +18,7 @@ export type Receivable = {
   contracts: {
     id: string;
     tipo_pagamento: string;
+    numero_parcelas: number | null;
     companies: {
       nome: string;
     } | null;
@@ -51,6 +52,20 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
     id: "empresa",
     header: "Empresa",
     accessorFn: row => row.contracts?.companies?.nome,
+  },
+  {
+    accessorKey: "installment_number",
+    header: "Parcela",
+    cell: ({ row }) => {
+      const { installment_number, contracts } = row.original;
+      if (contracts?.tipo_pagamento === 'parcelado' && installment_number && contracts.numero_parcelas) {
+        return `${installment_number} / ${contracts.numero_parcelas}`;
+      }
+      if (contracts?.tipo_pagamento === 'pagamento_unico') {
+        return 'Única';
+      }
+      return 'N/A';
+    },
   },
   {
     accessorKey: "amount",
