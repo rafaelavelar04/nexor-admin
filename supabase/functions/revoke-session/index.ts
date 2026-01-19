@@ -21,14 +21,11 @@ serve(async (req) => {
     const { data: { user: adminUser } } = await supabase.auth.getUser()
     if (!adminUser) throw new Error('Acesso negado.')
 
-    // 2. Verificar se o usuário é admin
-    const { data: adminProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', adminUser.id)
-      .single()
-    if (profileError || !is_admin()) {
-      throw new Error('Apenas administradores podem revogar sessões.')
+    // 2. Verificar se o usuário é admin usando a função RPC
+    const { data: isAdmin, error: rpcError } = await supabase.rpc('is_admin');
+    if (rpcError || !isAdmin) {
+      console.error(`[revoke-session] Falha na verificação de admin para o usuário ${adminUser.id}:`, rpcError?.message);
+      throw new Error('Apenas administradores podem revogar sessões.');
     }
 
     // 3. Obter os dados da requisição

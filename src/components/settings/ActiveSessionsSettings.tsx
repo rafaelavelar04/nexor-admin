@@ -24,7 +24,7 @@ const ActiveSessionsSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('active_sessions')
-        .select('*, user:profiles(full_name, role)')
+        .select('*, user:profiles!user_id(full_name, role)')
         .order('last_seen_at', { ascending: false });
       if (error) throw error;
       return data.map(s => ({ ...s, user: Array.isArray(s.user) ? s.user[0] : s.user })) as ActiveSession[];
