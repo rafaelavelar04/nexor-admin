@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { MonthlyGoalCard } from '@/components/dashboard/MonthlyGoalCard';
-import { Loader2, Users, Briefcase, Target, BarChart, DollarSign } from 'lucide-react';
+import { Loader2, Users, Briefcase, Target, BarChart, DollarSign, TrendingUp, CheckCircle } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, Legend, Pie, PieChart, Cell, Line, LineChart, Area, AreaChart, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { subDays, startOfMonth, isWithinInterval, format } from 'date-fns';
+import { subDays, startOfMonth, isWithinInterval, format, endOfMonth } from 'date-fns';
 import { useSession } from '@/contexts/SessionContext';
 import { formatCurrency } from '@/lib/formatters';
 import { useMemo } from 'react';
@@ -52,7 +52,12 @@ const Dashboard = () => {
         .eq('ano', currentYear);
       if (goalsError) throw goalsError;
 
-      return { leads, opportunities, goals };
+      const { data: receivables, error: receivablesError } = await supabase
+        .from('receivables')
+        .select('amount, due_date, status, paid_at');
+      if (receivablesError) throw receivablesError;
+
+      return { leads, opportunities, goals, receivables };
     }
   });
 
@@ -89,9 +94,10 @@ const Dashboard = () => {
     return <div className="text-destructive">Erro ao carregar os dados do dashboard.</div>;
   }
 
-  const { opportunities, goals } = data;
+  const { opportunities, goals, receivables } = data;
   const now = new Date();
   const startOfCurrentMonth = startOfMonth(now);
+  const endOfCurrentMonth = endOfMonth(now);
   
   const wonThisMonth = opportunities.filter(o => o.status === 'won' && o.closed_at && isWithinInterval(new Date(o.closed_at), { start: startOfCurrentMonth, end: now }));
   const wonThisMonthValue = wonThisMonth.reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
@@ -99,6 +105,12 @@ const Dashboard = () => {
   const totalLeads = data.leads.length;
   const openOpportunities = opportunities.filter(o => o.status === 'open').length;
   const pipelineValue = opportunities.filter(o => o.status === 'open').reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
+
+  const receivablesThisMonth = receivables.filter(r => r.due_date && isWithinInterval(new Date(r.due_date), { start: startOfCurrentMonth, end: endOfCurrentMonth }));
+  const forecastedRevenueThisMonth = receivablesThisMonth.reduce((sum, r) => sum + r.amount, 0);
+  const receivedRevenueThisMonth = receivablesThisMonth
+    .filter(r => r.status === 'pago' && r.paid_at && isWithinInterval(new Date(r.paid_at), { start: startOfCurrentMonth, end: endOfCurrentMonth }))
+    .reduce((sum, r) => sum + r.amount, 0);
 
   const globalGoal = goals.find(g => g.responsavel_id === null);
   const userGoal = user ? goals.find(g => g.responsavel_id === user.id) : null;
@@ -142,11 +154,13 @@ const Dashboard = () => {
         <p className="text-muted-foreground mt-1">Visão geral do desempenho comercial.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <KpiCard title="Leads Ativos" value={totalLeads} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
         <KpiCard title="Oportunidades Abertas" value={openOpportunities} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
         <KpiCard title="Valor do Pipeline" value={formatCurrency(pipelineValue)} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
-        <KpiCard title="Ganhos no Mês" value={formatCurrency(wonThisMonthValue)} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
+        <KpiCard title="Ganhos no Mês (Opps)" value={formatCurrency(wonThisMonthValue)} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
+        <KpiCard title="Receita Prevista (Mês)" value={formatCurrency(forecastedRevenueThisMonth)} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} />
+        <KpiCard title="Receita Recebida (Mês)" value={formatCurrency(receivedRevenueThisMonth)} icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
