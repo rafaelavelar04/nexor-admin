@@ -102,8 +102,8 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
       const { start_date, end_date, ...restOfData } = data;
       const submissionData = {
         ...restOfData,
-        start_date: start_date.toISOString(),
-        end_date: end_date ? end_date.toISOString() : null,
+        start_date: start_date.toISOString().split('T')[0],
+        end_date: end_date ? end_date.toISOString().split('T')[0] : null,
       };
 
       // 1. Upsert contract
