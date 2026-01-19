@@ -15,10 +15,24 @@ const ReceivablesTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('receivables')
-        .select('*, contracts!inner(id, tipo_pagamento, numero_parcelas, companies(nome))')
+        .select(`
+          *,
+          contracts (
+            id,
+            tipo_pagamento,
+            numero_parcelas,
+            companies (
+              nome
+            )
+          )
+        `)
         .order('due_date', { ascending: true });
+
       if (error) throw error;
-      return data || [];
+      
+      // Garante que apenas recebíveis com contratos sejam processados
+      const validData = data?.filter(r => r.contracts) as Receivable[] | null;
+      return validData || [];
     },
   });
 

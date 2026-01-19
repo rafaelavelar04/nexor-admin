@@ -29,7 +29,7 @@ const ContractDetailPage = () => {
       if (!id) return null;
       const { data: contract, error } = await supabase
         .from('contracts')
-        .select('*, company:companies(nome), opportunity:opportunities(titulo), receivables(*)')
+        .select('*, companies(nome), opportunities(titulo), receivables(*)')
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -64,14 +64,14 @@ const ContractDetailPage = () => {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl">Contrato: {data.company?.nome}</CardTitle>
+              <CardTitle className="text-2xl">Contrato: {data.companies?.nome}</CardTitle>
               <CardDescription>Detalhes do contrato e faturamento</CardDescription>
             </div>
             <Badge className={`capitalize ${statusStyles[data.status]}`}>{data.status}</Badge>
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div className="flex items-center gap-2"><Building className="w-4 h-4 text-muted-foreground" /><span>{data.company?.nome}</span></div>
+          <div className="flex items-center gap-2"><Building className="w-4 h-4 text-muted-foreground" /><span>{data.companies?.nome}</span></div>
           <div className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-muted-foreground" /><span>{formatCurrency(data.value)} {data.billing_cycle ? `/${data.billing_cycle}` : ''}</span></div>
           <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /><span>Início: {format(new Date(data.start_date), 'dd/MM/yyyy', { locale: ptBR })}</span></div>
           <div className="flex items-center gap-2 col-span-1 md:col-span-3"><FileText className="w-4 h-4 text-muted-foreground" /><span>Pagamento: <span className="capitalize font-medium">{data.tipo_pagamento?.replace('_', ' ')}</span> {data.numero_parcelas ? `em ${data.numero_parcelas}x` : ''}</span></div>
