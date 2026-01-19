@@ -40,7 +40,7 @@ serve(async (req) => {
       })
     }
 
-    const { email, password, full_name, role, invite } = await req.json()
+    const { email, password, full_name, role, invite, permissions } = await req.json()
     if (!email || !full_name || !role) {
       return new Response(JSON.stringify({ error: 'Missing required fields: email, full_name, role' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -91,6 +91,35 @@ serve(async (req) => {
       throw updateProfileError;
     }
     
+    // (NOVO) Lidar com permissões customizadas
+    if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+      const { data: permissionIds, error: permIdsError } = await supabaseAdmin
+        .from('permissions')
+        .select('id')
+        .in('name', permissions);
+      
+      if (permIdsError) {
+        await supabaseAdmin.auth.admin.deleteUser(newUser.id);
+        throw new Error(`Failed to look up permission IDs: ${permIdsError.message}`);
+      }
+
+      const userPermissionRelations = permissionIds.map(p => ({
+        user_id: newUser.id,
+        permission_id: p.id,
+      }));
+
+      if (userPermissionRelations.length > 0) {
+        const { error: userPermsError } = await supabaseAdmin
+          .from('user_permissions')
+          .insert(userPermissionRelations);
+        
+        if (userPermsError) {
+          await supabaseAdmin.auth.admin.deleteUser(newUser.id);
+          throw new Error(`Failed to set custom permissions: ${userPermsError.message}`);
+        }
+      }
+    }
+
     console.log(`[create-user] Admin ${user.id} successfully created user ${newUser.id}`);
 
     return new Response(JSON.stringify({ message: 'User created successfully', user: newUser }), {
