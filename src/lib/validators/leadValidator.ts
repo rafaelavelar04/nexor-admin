@@ -23,6 +23,9 @@ export const leadSchema = z.object({
   instagram_empresa: z.string().optional(),
   site_empresa: z.string().optional(),
   decisores: z.array(decisorSchema).optional(),
+  cidade: z.string().optional(),
+  tecnologia_atual: z.string().optional(),
+  dor_identificada: z.string().optional(),
 });
 
 export type LeadFormData = z.infer<typeof leadSchema>;

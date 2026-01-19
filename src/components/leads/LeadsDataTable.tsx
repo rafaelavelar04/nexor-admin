@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { NICHOS } from "@/lib/constants"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -88,7 +89,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           }
           className="max-w-sm bg-gray-800 border-gray-700"
         />
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="bg-gray-800 border-gray-700">
@@ -128,6 +129,19 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
               </Command>
             </PopoverContent>
           </Popover>
+
+          <Select
+            value={(table.getColumn("nicho")?.getFilterValue() as string) ?? ""}
+            onValueChange={(value) => table.getColumn("nicho")?.setFilterValue(value === "all" ? "" : value)}
+          >
+            <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
+              <SelectValue placeholder="Filtrar por nicho" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 text-white border-gray-700">
+              <SelectItem value="all">Todos os nichos</SelectItem>
+              {NICHOS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
 
           <Select
             value={(table.getColumn("status")?.getFilterValue() as string) ?? ""}

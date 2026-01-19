@@ -73,6 +73,10 @@ export const getColumns = (
     header: "Empresa",
   },
   {
+    accessorKey: "nicho",
+    header: "Nicho",
+  },
+  {
     accessorKey: "responsavel",
     header: "Responsável",
     cell: ({ row }) => {

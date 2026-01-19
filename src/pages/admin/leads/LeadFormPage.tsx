@@ -19,20 +19,12 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { DecisoresFormSection } from '@/components/leads/DecisoresFormSection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NICHOS } from '@/lib/constants';
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
   "Em conversa", "Follow-up agendado", "Não interessado",
 ];
-
-const NICHOS = [
-  "Advocacia", "Agronegócio", "Agências de Marketing", "Alimentação / Restaurantes", "Arquitetura",
-  "Clínicas Médicas", "Clínicas Odontológicas", "Comércio Atacadista", "Comércio Varejista",
-  "Contabilidade", "Construtoras", "Educação / Cursos", "E-commerce", "Energia Solar",
-  "Engenharia", "Estética", "Farmácias", "Fintechs", "Imobiliárias", "Indústrias",
-  "Logística", "Marketing Digital", "Prestadores de Serviço", "SaaS", "Tecnologia da Informação",
-  "Transportes", "Turismo", "Outros"
-].sort();
 
 const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 
@@ -83,6 +75,7 @@ const LeadFormPage = () => {
       nome: '', empresa: '', nicho: '', responsavel_id: '', status: 'Não contatado',
       cargo: '', email: '', whatsapp: '', observacoes: '', telefone_empresa: '',
       instagram_empresa: '', site_empresa: '', decisores: [],
+      cidade: '', tecnologia_atual: '', dor_identificada: '',
     },
   });
 
@@ -167,6 +160,7 @@ const LeadFormPage = () => {
               <FormField control={form.control} name="site_empresa" render={({ field }) => (<FormItem><FormLabel>Site</FormLabel><FormControl><Input placeholder="https://empresa.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="telefone_empresa" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input placeholder="Telefone da empresa" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="instagram_empresa" render={({ field }) => (<FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@empresa" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="cidade" render={({ field }) => (<FormItem><FormLabel>Cidade</FormLabel><FormControl><Input placeholder="Cidade da empresa" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </CardContent></Card>
 
             <DecisoresFormSection />
@@ -175,6 +169,8 @@ const LeadFormPage = () => {
               <FormField control={form.control} name="responsavel_id" render={({ field }) => (<FormItem><FormLabel>Responsável</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um responsável" /></SelectTrigger></FormControl><SelectContent>{users?.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione um status" /></SelectTrigger></FormControl><SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="proximo_followup" render={({ field }) => (<FormItem className="flex flex-col pt-2"><FormLabel className="mb-2">Próximo Follow-up</FormLabel><DatePicker date={field.value} setDate={field.onChange} /><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="tecnologia_atual" render={({ field }) => (<FormItem><FormLabel>Tecnologia Atual</FormLabel><FormControl><Input placeholder="Ex: RD Station, Hubspot" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="dor_identificada" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Dor Identificada</FormLabel><FormControl><Textarea placeholder="Qual o principal problema ou necessidade do lead?" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </CardContent></Card>
 
             <FormItem><FormLabel>Tags</FormLabel><MultiSelectCreatable options={allTags || []} selected={selectedTags} onChange={setSelectedTags} placeholder="Adicionar tags..." /></FormItem>
