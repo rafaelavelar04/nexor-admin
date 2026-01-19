@@ -30,6 +30,7 @@ import TicketFormPage from "./pages/admin/support/TicketFormPage";
 import AlertsPage from "./pages/admin/AlertsPage";
 import InsightsPage from "./pages/admin/InsightsPage";
 import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
+import ForecastPage from "./pages/admin/ForecastPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="activities" element={<ActivitiesPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="insights" element={<InsightsPage />} />
+                  <Route path="forecast" element={<ForecastPage />} />
                   <Route path="financeiro" element={<FinancePage />} />
                   <Route path="financeiro/:id" element={<ContractDetailPage />} />
                   <Route path="onboarding" element={<OnboardingPage />} />

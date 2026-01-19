@@ -3,7 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft,
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -26,6 +26,7 @@ const navItems = [
   { name: "Atividades", href: "/admin/activities", icon: ClipboardList },
   { name: "Relatórios", href: "/admin/reports", icon: BarChart },
   { name: "Insights", href: "/admin/insights", icon: Lightbulb },
+  { name: "Forecast", href: "/admin/forecast", icon: Telescope },
 ];
 
 const settingsNavItems = [

@@ -13,11 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { DatePicker } from '../ui/date-picker';
 
 const opportunitySchema = z.object({
   titulo: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }),
   valor_estimado: z.number().positive({ message: "O valor deve ser positivo." }).optional().nullable(),
   responsavel_id: z.string().uuid({ message: "Selecione um responsável." }),
+  expected_close_date: z.date().optional().nullable(),
 });
 
 type OpportunityFormData = z.infer<typeof opportunitySchema>;
@@ -40,6 +42,7 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
       titulo: '',
       valor_estimado: null,
       responsavel_id: user?.id || '',
+      expected_close_date: null,
     },
   });
 
@@ -65,7 +68,6 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
     mutationFn: async (data: OpportunityFormData) => {
       if (!leadId) throw new Error("Lead ID não encontrado.");
 
-      // 1. Check for existing active opportunity
       const { data: existingOpp, error: checkError } = await supabase
         .from('opportunities')
         .select('id')
@@ -73,14 +75,13 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
         .eq('status', 'open')
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
       }
       if (existingOpp) {
         throw new Error("Este lead já possui uma oportunidade ativa.");
       }
 
-      // 2. Get the first pipeline stage
       const { data: firstStage, error: stageError } = await supabase
         .from('pipeline_stages')
         .select('id')
@@ -92,9 +93,9 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
         throw new Error("Não foi possível encontrar a etapa inicial do pipeline.");
       }
 
-      // 3. Create the opportunity
       const { error: insertError } = await supabase.from('opportunities').insert({
         ...data,
+        expected_close_date: data.expected_close_date ? data.expected_close_date.toISOString().split('T')[0] : null,
         lead_id: leadId,
         pipeline_stage_id: firstStage.id,
         status: 'open',
@@ -105,7 +106,7 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
     onSuccess: () => {
       showSuccess('Lead convertido em oportunidade com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      queryClient.invalidateQueries({ queryKey: ['leads'] }); // To potentially update lead status in the future
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
       onClose();
       form.reset();
     },
@@ -136,15 +137,24 @@ export const ConvertLeadModal = ({ leadId, leadName, isOpen, onClose }: ConvertL
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="valor_estimado" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor Estimado (opcional)</FormLabel>
-                <FormControl>
-                  <CurrencyInput value={field.value} onValueChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="valor_estimado" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor Estimado</FormLabel>
+                  <FormControl>
+                    <CurrencyInput value={field.value} onValueChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="expected_close_date" render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="mb-2.5">Data Prevista de Fechamento</FormLabel>
+                  <DatePicker date={field.value} setDate={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
             <FormField control={form.control} name="responsavel_id" render={({ field }) => (
               <FormItem>
                 <FormLabel>Responsável</FormLabel>
