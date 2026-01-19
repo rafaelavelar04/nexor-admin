@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft,
 } from "lucide-react";
+import { useState } from "react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
