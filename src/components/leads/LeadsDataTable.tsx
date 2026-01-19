@@ -143,7 +143,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
           </Select>
         </div>
       </div>
-      <div className="rounded-md border border-gray-700">
+      <div className="rounded-md border border-gray-700 overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -74,7 +74,7 @@ const ActiveSessionsSettings = () => {
       return <EmptyState icon={<Shield className="w-12 h-12" />} title="Nenhuma sessão ativa" description="Quando os usuários fizerem login, suas sessões aparecerão aqui." />;
     }
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (

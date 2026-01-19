@@ -72,7 +72,7 @@ export function TicketsDataTable<TData extends Ticket, TValue>({ columns, data }
           </Select>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

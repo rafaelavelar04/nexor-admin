@@ -37,54 +37,56 @@ export const ContractReceivablesTable = ({ receivables, onMarkAsPaid, isUpdating
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Status</TableHead>
-          <TableHead>Parcela</TableHead>
-          <TableHead>Vencimento</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead className="text-right">Ação</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {receivables.sort((a, b) => (a.installment_number || 0) - (b.installment_number || 0)).map(item => {
-          const isOverdue = isBefore(new Date(item.due_date), startOfToday()) && item.status === 'pendente';
-          const status = isOverdue ? 'atrasado' : item.status;
-          const config = statusConfig[status];
-          const isPaid = item.status === 'pago';
-          const isUpdatingThisDate = updatingReceivableId === item.id;
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Status</TableHead>
+            <TableHead>Parcela</TableHead>
+            <TableHead>Vencimento</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead className="text-right">Ação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {receivables.sort((a, b) => (a.installment_number || 0) - (b.installment_number || 0)).map(item => {
+            const isOverdue = isBefore(new Date(item.due_date), startOfToday()) && item.status === 'pendente';
+            const status = isOverdue ? 'atrasado' : item.status;
+            const config = statusConfig[status];
+            const isPaid = item.status === 'pago';
+            const isUpdatingThisDate = updatingReceivableId === item.id;
 
-          return (
-            <TableRow key={item.id}>
-              <TableCell><Badge className={config.className}>{config.icon}<span className="ml-2">{config.label}</span></Badge></TableCell>
-              <TableCell>{item.installment_number || 'Única'}</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <DatePicker
-                    date={new Date(item.due_date)}
-                    setDate={(date) => { if (date) onUpdateDueDate(item.id, date) }}
-                    buttonClassName="h-8"
+            return (
+              <TableRow key={item.id}>
+                <TableCell><Badge className={config.className}>{config.icon}<span className="ml-2">{config.label}</span></Badge></TableCell>
+                <TableCell>{item.installment_number || 'Única'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <DatePicker
+                      date={new Date(item.due_date)}
+                      setDate={(date) => { if (date) onUpdateDueDate(item.id, date) }}
+                      buttonClassName="h-8"
+                      disabled={isUpdatingStatus || !!updatingReceivableId}
+                    />
+                    {isUpdatingThisDate && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                  </div>
+                </TableCell>
+                <TableCell>{formatCurrency(item.amount)}</TableCell>
+                <TableCell className="text-right">
+                  <Button 
+                    variant={isPaid ? "outline" : "default"} 
+                    size="sm"
+                    onClick={() => onMarkAsPaid(item.id, !isPaid)}
                     disabled={isUpdatingStatus || !!updatingReceivableId}
-                  />
-                  {isUpdatingThisDate && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-                </div>
-              </TableCell>
-              <TableCell>{formatCurrency(item.amount)}</TableCell>
-              <TableCell className="text-right">
-                <Button 
-                  variant={isPaid ? "outline" : "default"} 
-                  size="sm"
-                  onClick={() => onMarkAsPaid(item.id, !isPaid)}
-                  disabled={isUpdatingStatus || !!updatingReceivableId}
-                >
-                  {isUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPaid ? 'Marcar como Pendente' : 'Marcar como Pago')}
-                </Button>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                  >
+                    {isUpdatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPaid ? 'Marcar como Pendente' : 'Marcar como Pago')}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

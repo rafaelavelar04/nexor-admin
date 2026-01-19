@@ -56,7 +56,7 @@ const WebhookLogsPage = () => {
         <p className="text-muted-foreground mt-1">Exibindo as últimas 100 entregas para "{webhook?.name || '...'}"</p>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Evento</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>

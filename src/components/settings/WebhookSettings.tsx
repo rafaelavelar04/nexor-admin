@@ -78,42 +78,44 @@ const WebhookSettings = () => {
       );
     }
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>URL</TableHead>
-            <TableHead>Eventos</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {webhooks.map(webhook => (
-            <TableRow key={webhook.id}>
-              <TableCell className="font-medium">{webhook.name}</TableCell>
-              <TableCell className="text-muted-foreground max-w-xs truncate">{webhook.url}</TableCell>
-              <TableCell><Badge variant="secondary">{webhook.events.length}</Badge></TableCell>
-              <TableCell>
-                <Switch
-                  checked={webhook.active}
-                  onCheckedChange={(active) => updateMutation.mutate({ id: webhook.id, active })}
-                />
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(webhook)}>Editar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(`/admin/webhooks/${webhook.id}/logs`)}>Ver Logs</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDelete(webhook.id)} className="text-destructive">Excluir</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>Eventos</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {webhooks.map(webhook => (
+              <TableRow key={webhook.id}>
+                <TableCell className="font-medium">{webhook.name}</TableCell>
+                <TableCell className="text-muted-foreground max-w-xs truncate">{webhook.url}</TableCell>
+                <TableCell><Badge variant="secondary">{webhook.events.length}</Badge></TableCell>
+                <TableCell>
+                  <Switch
+                    checked={webhook.active}
+                    onCheckedChange={(active) => updateMutation.mutate({ id: webhook.id, active })}
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(webhook)}>Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/webhooks/${webhook.id}/logs`)}>Ver Logs</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(webhook.id)} className="text-destructive">Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 

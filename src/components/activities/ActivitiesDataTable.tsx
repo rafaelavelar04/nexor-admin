@@ -132,7 +132,7 @@ export function ActivitiesDataTable<TData, TValue>({ columns, data }: DataTableP
           </Popover>
         </div>
       </div>
-      <div className="rounded-md border border-border">
+      <div className="rounded-md border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

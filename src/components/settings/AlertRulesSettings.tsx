@@ -57,7 +57,7 @@ const AlertRulesSettings = () => {
         <CardDescription>Ative ou desative os alertas automáticos do sistema.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
