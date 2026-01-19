@@ -3,12 +3,13 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb,
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft,
 } from "lucide-react";
-import { useState } from "react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -32,25 +33,26 @@ const AdminLayout = () => {
   const { profile, logout } = useSession();
   const { setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useLocalStorage('sidebar-collapsed', false);
   const unreadAlertsCount = 1; // Mock - virá do hook useAlerts
 
-  const NavLinks = () => (
+  const NavLinks = ({ isCollapsed }: { isCollapsed: boolean }) => (
     <nav className="flex flex-col space-y-1 flex-grow">
       {navItems.map((item) => (
         <NavLink
           key={item.name}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 relative ${
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`
+            cn(
+              "flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 relative",
+              isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              isCollapsed && "justify-center"
+            )
           }
           onClick={() => setSidebarOpen(false)}
         >
-          <item.icon className="w-5 h-5 mr-3" />
-          <span>{item.name}</span>
+          <item.icon className={cn("w-5 h-5", !isCollapsed && "mr-3")} />
+          <span className={cn(isCollapsed && "hidden")}>{item.name}</span>
         </NavLink>
       ))}
       <div className="flex-grow" />
@@ -59,16 +61,16 @@ const AdminLayout = () => {
           key={item.name}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 ${
-              isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`
+            cn(
+              "flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-200",
+              isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              isCollapsed && "justify-center"
+            )
           }
           onClick={() => setSidebarOpen(false)}
         >
-          <item.icon className="w-5 h-5 mr-3" />
-          {item.name}
+          <item.icon className={cn("w-5 h-5", !isCollapsed && "mr-3")} />
+          <span className={cn(isCollapsed && "hidden")}>{item.name}</span>
         </NavLink>
       ))}
     </nav>
@@ -91,20 +93,29 @@ const AdminLayout = () => {
               <X className="w-6 h-6" />
             </button>
           </div>
-          <NavLinks />
+          <NavLinks isCollapsed={false} />
         </div>
         <div className="flex-shrink-0 w-14 bg-black/30" onClick={() => setSidebarOpen(false)}></div>
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-64 bg-card border-r border-border p-4">
-        <div className="flex items-center justify-center mb-8 px-2 h-8">
-          <img src="/branding/Nexor SF.png" alt="Nexor" className="h-auto w-full max-w-[140px]" />
+      <aside className={cn("hidden md:flex md:flex-col bg-card border-r border-border p-4 transition-all duration-300 ease-in-out", isCollapsed ? "w-20" : "w-64")}>
+        <div className={cn("flex items-center justify-center mb-8 h-8 transition-all duration-300", isCollapsed ? "px-0" : "px-2")}>
+          <Link to="/admin" className="transition-transform duration-300 hover:scale-105">
+            <img 
+              src={isCollapsed ? "/branding/Nexor - SF2.png" : "/branding/Nexor SF.png"} 
+              alt="Nexor" 
+              className={cn("transition-all duration-300", isCollapsed ? "h-8 w-8" : "h-auto w-full max-w-[140px]")}
+            />
+          </Link>
         </div>
-        <NavLinks />
+        <NavLinks isCollapsed={isCollapsed} />
+        <Button variant="ghost" onClick={() => setIsCollapsed(!isCollapsed)} className="mt-4 text-muted-foreground hover:text-foreground">
+          <ChevronsLeft className={cn("w-5 h-5 transition-transform duration-300", isCollapsed && "rotate-180")} />
+        </Button>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={cn("flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out", isCollapsed ? "md:ml-20" : "md:ml-64")}>
         <header className="flex items-center justify-between p-4 bg-card border-b border-border md:justify-end">
           <button
             onClick={() => setSidebarOpen(true)}
