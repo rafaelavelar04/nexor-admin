@@ -10,6 +10,8 @@ import { ContractsDataTable } from '@/components/finance/ContractsDataTable';
 import { getColumns, Contract } from '@/components/finance/ContractsTableColumns';
 import { ContractFormDialog } from '@/components/finance/ContractFormDialog';
 import { formatCurrency } from '@/lib/formatters';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ReceivablesTab from './finance/ReceivablesTab';
 
 const FinancePage = () => {
   const { profile } = useSession();
@@ -52,7 +54,7 @@ const FinancePage = () => {
 
   const columns = getColumns(handleEdit);
 
-  const renderContent = () => {
+  const renderContractsContent = () => {
     if (isLoading) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
@@ -92,7 +94,18 @@ const FinancePage = () => {
         <KpiCard title="Valor Total Ativo" value={formatCurrency(totalActiveValue)} icon={<DollarSign className="h-5 w-5 text-cyan-400" />} description="Soma de todos os contratos com status 'ativo'." />
       </div>
 
-      {renderContent()}
+      <Tabs defaultValue="contracts" className="w-full">
+        <TabsList>
+          <TabsTrigger value="contracts">Contratos</TabsTrigger>
+          <TabsTrigger value="receivables">Valores a Receber</TabsTrigger>
+        </TabsList>
+        <TabsContent value="contracts" className="mt-4">
+          {renderContractsContent()}
+        </TabsContent>
+        <TabsContent value="receivables" className="mt-4">
+          <ReceivablesTab />
+        </TabsContent>
+      </Tabs>
 
       <ContractFormDialog
         isOpen={isFormOpen}

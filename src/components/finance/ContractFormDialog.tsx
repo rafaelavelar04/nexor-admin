@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -13,6 +14,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Loader2 } from 'lucide-react';
 import { Contract } from './ContractsTableColumns';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { addMonths } from 'date-fns';
 
 const contractSchema = z.object({
   company_id: z.string().uuid("Selecione uma empresa."),
@@ -23,9 +25,14 @@ const contractSchema = z.object({
   status: z.enum(['ativo', 'pausado', 'cancelado', 'finalizado']),
   start_date: z.date({ required_error: "A data de início é obrigatória." }),
   end_date: z.date().optional().nullable(),
+  tipo_pagamento: z.enum(['pagamento_unico', 'parcelado', 'recorrente']),
+  numero_parcelas: z.coerce.number().int().positive().optional().nullable(),
 }).refine(data => data.type === 'pontual' || !!data.billing_cycle, {
   message: "O ciclo de faturamento é obrigatório para contratos recorrentes.",
   path: ["billing_cycle"],
+}).refine(data => data.tipo_pagamento !== 'parcelado' || (data.numero_parcelas && data.numero_parcelas > 0), {
+    message: "O número de parcelas é obrigatório para pagamento parcelado.",
+    path: ["numero_parcelas"],
 });
 
 type ContractFormData = z.infer<typeof contractSchema>;
@@ -46,6 +53,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
   });
 
   const contractType = form.watch('type');
+  const paymentType = form.watch('tipo_pagamento');
 
   useEffect(() => {
     if (isOpen) {
@@ -54,6 +62,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
           ...contract,
           start_date: new Date(contract.start_date),
           end_date: contract.end_date ? new Date(contract.end_date) : null,
+          tipo_pagamento: contract.tipo_pagamento || 'pagamento_unico',
         });
         setSelectedCompany(contract.company_id);
       } else {
@@ -61,6 +70,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
           type: 'recorrente',
           status: 'ativo',
           start_date: new Date(),
+          tipo_pagamento: 'recorrente',
         });
         setSelectedCompany(undefined);
       }
@@ -89,14 +99,52 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
   const mutation = useMutation({
     mutationFn: async (data: ContractFormData) => {
-      const { error } = isEditMode
-        ? await supabase.from('contracts').update(data).eq('id', contract!.id)
-        : await supabase.from('contracts').insert(data);
-      if (error) throw error;
+      // 1. Upsert contract
+      const { data: contractResult, error: contractError } = isEditMode
+        ? await supabase.from('contracts').update(data).eq('id', contract!.id).select().single()
+        : await supabase.from('contracts').insert(data).select().single();
+      if (contractError) throw contractError;
+
+      const contractId = contractResult.id;
+
+      // 2. Delete old receivables to regenerate them
+      const { error: deleteError } = await supabase.from('receivables').delete().eq('contract_id', contractId);
+      if (deleteError) throw deleteError;
+
+      // 3. Generate new receivables based on payment type
+      const newReceivables: Omit<any, 'id' | 'created_at'>[] = [];
+      if (data.tipo_pagamento === 'pagamento_unico') {
+        newReceivables.push({
+          contract_id: contractId,
+          due_date: data.start_date.toISOString().split('T')[0],
+          amount: data.value,
+          status: 'pendente',
+          installment_number: 1,
+        });
+      } else if (data.tipo_pagamento === 'parcelado' && data.numero_parcelas && data.numero_parcelas > 0) {
+        const installmentValue = data.value / data.numero_parcelas;
+        for (let i = 0; i < data.numero_parcelas; i++) {
+          newReceivables.push({
+            contract_id: contractId,
+            due_date: addMonths(data.start_date, i).toISOString().split('T')[0],
+            amount: installmentValue,
+            status: 'pendente',
+            installment_number: i + 1,
+          });
+        }
+      }
+      // Note: 'recorrente' logic will be handled by a separate process or future feature.
+
+      // 4. Insert new receivables
+      if (newReceivables.length > 0) {
+        const { error: insertError } = await supabase.from('receivables').insert(newReceivables);
+        if (insertError) throw insertError;
+      }
     },
     onSuccess: () => {
       showSuccess(`Contrato ${isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['receivables'] });
       onClose();
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
@@ -137,7 +185,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="type" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
+                  <FormLabel>Tipo de Contrato</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
@@ -151,7 +199,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
               {contractType === 'recorrente' && (
                 <FormField control={form.control} name="billing_cycle" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ciclo</FormLabel>
+                    <FormLabel>Ciclo de Faturamento</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Ex: Mensal" /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -166,7 +214,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
             </div>
             <FormField control={form.control} name="value" render={({ field }) => (
               <FormItem>
-                <FormLabel>Valor</FormLabel>
+                <FormLabel>Valor Total</FormLabel>
                 <FormControl>
                   <CurrencyInput value={field.value} onValueChange={field.onChange} />
                 </FormControl>
@@ -174,9 +222,34 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
               </FormItem>
             )} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField control={form.control} name="tipo_pagamento" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Pagamento</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="pagamento_unico">Pagamento Único</SelectItem>
+                      <SelectItem value="parcelado">Parcelado</SelectItem>
+                      <SelectItem value="recorrente">Recorrente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              {paymentType === 'parcelado' && (
+                <FormField control={form.control} name="numero_parcelas" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nº de Parcelas</FormLabel>
+                    <FormControl><Input type="number" min="1" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="start_date" render={({ field }) => (
                 <FormItem className="flex flex-col pt-2">
-                  <FormLabel className="mb-2">Data de Início</FormLabel>
+                  <FormLabel className="mb-2">Data de Início / 1º Vencimento</FormLabel>
                   <DatePicker date={field.value} setDate={field.onChange} />
                   <FormMessage />
                 </FormItem>
@@ -191,7 +264,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
             </div>
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>Status do Contrato</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                   <SelectContent>

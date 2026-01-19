@@ -17,6 +17,8 @@ export type Contract = {
   status: 'ativo' | 'pausado' | 'cancelado' | 'finalizado';
   start_date: string;
   end_date: string | null;
+  tipo_pagamento: 'pagamento_unico' | 'parcelado' | 'recorrente';
+  numero_parcelas: number | null;
   company: { nome: string } | null;
   opportunity: { titulo: string } | null;
 };
@@ -62,19 +64,14 @@ export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Cont
     },
   },
   {
-    accessorKey: "type",
-    header: "Tipo",
-    cell: ({ row }) => <span className="capitalize">{row.original.type}</span>,
+    accessorKey: "tipo_pagamento",
+    header: "Pagamento",
+    cell: ({ row }) => <span className="capitalize">{row.original.tipo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
   },
   {
     accessorKey: "start_date",
     header: "Início",
     cell: ({ row }) => format(new Date(row.original.start_date), "dd/MM/yyyy", { locale: ptBR }),
-  },
-  {
-    accessorKey: "end_date",
-    header: "Fim",
-    cell: ({ row }) => row.original.end_date ? format(new Date(row.original.end_date), "dd/MM/yyyy", { locale: ptBR }) : 'Indeterminado',
   },
   {
     id: "actions",
