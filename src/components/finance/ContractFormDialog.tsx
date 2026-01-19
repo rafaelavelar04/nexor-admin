@@ -99,10 +99,17 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
   const mutation = useMutation({
     mutationFn: async (data: ContractFormData) => {
+      const { start_date, end_date, ...restOfData } = data;
+      const submissionData = {
+        ...restOfData,
+        start_date: start_date.toISOString(),
+        end_date: end_date ? end_date.toISOString() : null,
+      };
+
       // 1. Upsert contract
       const { data: contractResult, error: contractError } = isEditMode
-        ? await supabase.from('contracts').update(data).eq('id', contract!.id).select().single()
-        : await supabase.from('contracts').insert(data).select().single();
+        ? await supabase.from('contracts').update(submissionData).eq('id', contract!.id).select().single()
+        : await supabase.from('contracts').insert(submissionData).select().single();
       if (contractError) throw contractError;
 
       const contractId = contractResult.id;
