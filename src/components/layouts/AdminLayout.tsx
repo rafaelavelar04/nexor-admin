@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -31,11 +33,32 @@ const settingsNavItems = [
 ]
 
 const AdminLayout = () => {
-  const { profile, logout } = useSession();
+  const { user, profile, logout } = useSession();
   const { setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useLocalStorage('sidebar-collapsed', false);
-  const unreadAlertsCount = 1; // Mock - virá do hook useAlerts
+
+  const { data: unreadAlertsCount } = useQuery({
+    queryKey: ['unreadAlertsCount', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { count, error } = await supabase
+        .from('alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .eq('archived', false)
+        .or(`snoozed_until.is.null,snoozed_until.lte.${new Date().toISOString()}`);
+      
+      if (error) {
+        console.error("Error fetching unread alerts count:", error);
+        return 0;
+      }
+      return count || 0;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   const NavLinks = ({ isCollapsed }: { isCollapsed: boolean }) => (
     <nav className="flex flex-col space-y-1 flex-grow">
