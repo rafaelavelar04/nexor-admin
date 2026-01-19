@@ -26,6 +26,9 @@ export const leadSchema = z.object({
   cidade: z.string().optional(),
   tecnologia_atual: z.string().optional(),
   dor_identificada: z.string().optional(),
+  consent_given: z.boolean().optional(),
+  consent_date: z.date().optional().nullable(),
+  consent_origin: z.string().optional(),
 });
 
 export type LeadFormData = z.infer<typeof leadSchema>;

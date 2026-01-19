@@ -16,11 +16,14 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { MultiSelectCreatable, Selectable } from '@/components/ui/multi-select-creatable';
 import { Combobox } from '@/components/ui/combobox';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Shield, Download, Eraser } from 'lucide-react';
 import { DecisoresFormSection } from '@/components/leads/DecisoresFormSection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NICHOS } from '@/lib/constants';
 import { PlaybookManager } from '@/components/leads/PlaybookManager';
+import { Checkbox } from '@/components/ui/checkbox';
+import { exportToCsv } from '@/lib/exportUtils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
@@ -36,10 +39,12 @@ const LeadFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useSession();
+  const { user, profile } = useSession();
   const isEditMode = Boolean(id);
+  const isAdmin = profile?.role === 'admin';
 
   const [selectedTags, setSelectedTags] = useState<Selectable[]>([]);
+  const [isAnonymizeAlertOpen, setIsAnonymizeAlertOpen] = useState(false);
 
   const { data: leadData, isLoading: isLoadingLead, isError: isErrorLead } = useQuery({
     queryKey: ['lead', id],
@@ -51,6 +56,20 @@ const LeadFormPage = () => {
     },
     enabled: isEditMode,
   });
+
+  // Log de acesso a dados sensíveis
+  useEffect(() => {
+    if (isEditMode && id && user) {
+      supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'view_sensitive_data',
+        entity: 'lead',
+        entity_id: id,
+      }).then(({ error }) => {
+        if (error) console.error("Erro ao registrar log de acesso:", error.message);
+      });
+    }
+  }, [id, isEditMode, user]);
 
   const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useQuery<UserProfile[]>({
     queryKey: ['profiles'],
@@ -77,6 +96,7 @@ const LeadFormPage = () => {
       cargo: '', email: '', whatsapp: '', observacoes: '', telefone_empresa: '',
       instagram_empresa: '', site_empresa: '', decisores: [],
       cidade: '', tecnologia_atual: '', dor_identificada: '',
+      consent_given: false, consent_date: null, consent_origin: '',
     },
   });
 
@@ -85,6 +105,7 @@ const LeadFormPage = () => {
       form.reset({
         ...leadData,
         proximo_followup: leadData.proximo_followup ? new Date(leadData.proximo_followup) : null,
+        consent_date: leadData.consent_date ? new Date(leadData.consent_date) : null,
         decisores: leadData.decisores || [],
       });
       setSelectedTags(leadData.tags || []);
@@ -136,7 +157,32 @@ const LeadFormPage = () => {
     onError: (error) => showError(`Erro ao salvar lead: ${error.message}`),
   });
 
+  const anonymizeMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("ID do lead não encontrado.");
+      const { error } = await supabase.rpc('anonymize_lead_data', { p_lead_id: id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Lead anonimizado com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ['lead', id] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      navigate('/admin/leads');
+    },
+    onError: (error: any) => showError(`Erro ao anonimizar: ${error.message}`),
+  });
+
   const onSubmit = (data: LeadFormData) => mutation.mutate(data);
+  const handleExport = () => {
+    if (!leadData) return;
+    const { tags, decisores, ...rest } = leadData;
+    const dataToExport = [{
+      ...rest,
+      tags: tags.map((t: Tag) => t.nome).join(', '),
+      decisores: JSON.stringify(decisores),
+    }];
+    exportToCsv(`dados_lead_${leadData.nome}.csv`, dataToExport);
+  };
 
   if (isLoadingLead || isLoadingUsers || isLoadingTags) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   if (isErrorLead || isErrorUsers || isErrorTags) return <div className="text-destructive">Erro ao carregar dados.</div>;
@@ -151,6 +197,7 @@ const LeadFormPage = () => {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* ... (campos existentes do formulário) ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField control={form.control} name="nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input placeholder="Nome do lead" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="cargo" render={({ field }) => (<FormItem><FormLabel>Cargo</FormLabel><FormControl><Input placeholder="Cargo do lead" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -177,6 +224,30 @@ const LeadFormPage = () => {
               <FormField control={form.control} name="dor_identificada" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Dor Identificada</FormLabel><FormControl><Textarea placeholder="Qual o principal problema ou necessidade do lead?" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </CardContent></Card>
 
+            {isAdmin && (
+              <Card className="bg-secondary/50 border-border">
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> LGPD e Conformidade</CardTitle></CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField control={form.control} name="consent_given" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <FormLabel className="font-normal">O titular concedeu consentimento para o tratamento de seus dados.</FormLabel>
+                    </FormItem>
+                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="consent_date" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Data do Consentimento</FormLabel><DatePicker date={field.value} setDate={field.onChange} /><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="consent_origin" render={({ field }) => (<FormItem><FormLabel>Origem do Consentimento</FormLabel><FormControl><Input placeholder="Ex: Formulário do site, Evento" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  {isEditMode && (
+                    <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border">
+                      <Button type="button" variant="outline" onClick={handleExport}><Download className="w-4 h-4 mr-2" />Exportar Dados</Button>
+                      <Button type="button" variant="destructive" onClick={() => setIsAnonymizeAlertOpen(true)}><Eraser className="w-4 h-4 mr-2" />Anonimizar Lead</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <FormItem><FormLabel>Tags</FormLabel><MultiSelectCreatable options={allTags || []} selected={selectedTags} onChange={setSelectedTags} placeholder="Adicionar tags..." /></FormItem>
             <FormField control={form.control} name="observacoes" render={({ field }) => (<FormItem><FormLabel>Observações</FormLabel><FormControl><Textarea placeholder="Observações sobre o lead" {...field} /></FormControl><FormMessage /></FormItem>)} />
             
@@ -189,6 +260,23 @@ const LeadFormPage = () => {
           </form>
         </Form>
       </div>
+      <AlertDialog open={isAnonymizeAlertOpen} onOpenChange={setIsAnonymizeAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Anonimização</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. Todos os dados pessoais deste lead (nome, email, telefone, etc.) e de seus decisores serão permanentemente removidos. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => anonymizeMutation.mutate()} disabled={anonymizeMutation.isPending} className="bg-destructive hover:bg-destructive/90">
+              {anonymizeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Sim, anonimizar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </FormProvider>
   );
 };
