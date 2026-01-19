@@ -13,26 +13,9 @@ const ReceivablesTab = () => {
   const { data: receivables, isLoading, isError } = useQuery<Receivable[]>({
     queryKey: ['receivables'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('receivables')
-        .select(`
-          *,
-          contracts (
-            id,
-            tipo_pagamento,
-            numero_parcelas,
-            companies (
-              nome
-            )
-          )
-        `)
-        .order('due_date', { ascending: true });
-
+      const { data, error } = await supabase.rpc('get_all_receivables');
       if (error) throw error;
-      
-      // Garante que apenas recebíveis com contratos sejam processados
-      const validData = data?.filter(r => r.contracts) as Receivable[] | null;
-      return validData || [];
+      return data || [];
     },
   });
 

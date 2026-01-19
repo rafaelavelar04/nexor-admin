@@ -15,14 +15,14 @@ export type Receivable = {
   status: 'pendente' | 'pago' | 'atrasado';
   paid_at: string | null;
   installment_number: number | null;
-  contracts: {
+  contract: {
     id: string;
     tipo_pagamento: string;
     numero_parcelas: number | null;
-    companies: {
+    company: {
       nome: string;
     } | null;
-  }; // Removido o | null por causa do inner join
+  };
 };
 
 const statusConfig = {
@@ -36,9 +36,7 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const date = new Date(row.original.due_date);
-      const isOverdue = isBefore(date, startOfToday()) && row.original.status === 'pendente';
-      const status = isOverdue ? 'atrasado' : row.original.status;
+      const status = row.original.status;
       const config = statusConfig[status];
       return (
         <Badge className={config.className}>
@@ -51,17 +49,17 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
   {
     id: "empresa",
     header: "Empresa",
-    accessorFn: row => row.contracts.companies?.nome,
+    accessorFn: row => row.contract.company?.nome,
   },
   {
     accessorKey: "installment_number",
     header: "Parcela",
     cell: ({ row }) => {
-      const { installment_number, contracts } = row.original;
-      if (contracts?.tipo_pagamento === 'parcelado' && installment_number && contracts.numero_parcelas) {
-        return `${installment_number} / ${contracts.numero_parcelas}`;
+      const { installment_number, contract } = row.original;
+      if (contract?.tipo_pagamento === 'parcelado' && installment_number && contract.numero_parcelas) {
+        return `${installment_number} / ${contract.numero_parcelas}`;
       }
-      if (contracts?.tipo_pagamento === 'pagamento_unico') {
+      if (contract?.tipo_pagamento === 'pagamento_unico') {
         return 'Única';
       }
       return 'N/A';
@@ -84,8 +82,8 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
   {
     id: "tipo_pagamento",
     header: "Tipo",
-    accessorFn: row => row.contracts.tipo_pagamento,
-    cell: ({ row }) => <span className="capitalize">{row.original.contracts.tipo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
+    accessorFn: row => row.contract.tipo_pagamento,
+    cell: ({ row }) => <span className="capitalize">{row.original.contract.tipo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
   },
   {
     id: "actions",
