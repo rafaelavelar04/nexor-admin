@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,8 +13,8 @@ interface Issue {
   responsible_id: string | null;
 }
 
-// Helper para processar a regra 'lead-uncontacted'
-async function processLeadUncontacted(client: any, rule: any): Promise<Issue[]> {
+// Funções de verificação de regras (sem alterações)
+async function processLeadUncontacted(client: SupabaseClient, rule: any): Promise<Issue[]> {
   const threshold = rule.threshold || 2;
   const { data, error } = await client.rpc('query_uncontacted_leads', { days_old: threshold });
   if (error) {
@@ -29,8 +29,7 @@ async function processLeadUncontacted(client: any, rule: any): Promise<Issue[]> 
   }));
 }
 
-// Helper para processar a regra 'opp-stagnant-stage'
-async function processOppStagnant(client: any, rule: any): Promise<Issue[]> {
+async function processOppStagnant(client: SupabaseClient, rule: any): Promise<Issue[]> {
   const threshold = rule.threshold || 7;
   const { data, error } = await client.rpc('query_stagnant_opportunities', { days_stagnant: threshold });
   if (error) {
@@ -43,6 +42,23 @@ async function processOppStagnant(client: any, rule: any): Promise<Issue[]> {
     link: `/admin/opportunities/${opp.id}`,
     responsible_id: opp.responsavel_id,
   }));
+}
+
+// Função para formatar o corpo do email
+function formatEmailBody(title: string, description: string, link: string): string {
+  const projectUrl = Deno.env.get('SUPABASE_URL')?.split('.co')[0] + '.co';
+  const fullLink = `${projectUrl}${link}`;
+  return `
+    <div style="font-family: sans-serif; padding: 20px; color: #333;">
+      <h2 style="color: #007bff;">Novo Alerta no Nexor</h2>
+      <h3 style="font-size: 1.1em;">${title}</h3>
+      <p>${description}</p>
+      <a href="${fullLink}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+        Ver no Sistema
+      </a>
+      <p style="font-size: 0.8em; color: #888; margin-top: 20px;">Esta é uma notificação automática. Por favor, não responda a este email.</p>
+    </div>
+  `;
 }
 
 serve(async (req) => {
@@ -58,19 +74,17 @@ serve(async (req) => {
 
     console.log('[alert-generator] Iniciando a verificação de alertas.');
 
-    const { data: rules, error: rulesError } = await supabaseAdmin
-      .from('alert_rules')
-      .select('*')
-      .eq('enabled', true);
+    const { data: rules, error: rulesError } = await supabaseAdmin.from('alert_rules').select('*').eq('enabled', true);
     if (rulesError) throw rulesError;
 
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, role');
+    const { data: users, error: usersError } = await supabaseAdmin.from('profiles').select('id, role, user_email:users(email)');
     if (usersError) throw usersError;
+    
+    const userMap = new Map(users.map((u: any) => [u.id, { role: u.role, email: u.user_email?.email }]));
     const admins = users.filter((u: any) => u.role === 'admin');
 
     let alertsToCreate: any[] = [];
+    let emailsToSend: any[] = [];
 
     for (const rule of rules) {
       let foundIssues: Issue[] = [];
@@ -81,18 +95,11 @@ serve(async (req) => {
         case 'opp-stagnant-stage':
           foundIssues = await processOppStagnant(supabaseAdmin, rule);
           break;
-        // Adicionar outros cases aqui no futuro
       }
 
       if (foundIssues.length > 0) {
         const links = foundIssues.map(issue => issue.link);
-        const { data: existingAlerts } = await supabaseAdmin
-          .from('alerts')
-          .select('link')
-          .eq('rule_id', rule.id)
-          .eq('archived', false)
-          .in('link', links);
-        
+        const { data: existingAlerts } = await supabaseAdmin.from('alerts').select('link').eq('rule_id', rule.id).eq('archived', false).in('link', links);
         const existingLinks = new Set((existingAlerts || []).map((a: any) => a.link));
         const newIssues = foundIssues.filter(issue => !existingLinks.has(issue.link));
 
@@ -106,13 +113,16 @@ serve(async (req) => {
           }
 
           for (const userId of targetUserIds) {
-            alertsToCreate.push({
-              user_id: userId,
-              rule_id: rule.id,
-              title: issue.title,
-              description: issue.description,
-              link: issue.link,
-            });
+            alertsToCreate.push({ user_id: userId, rule_id: rule.id, title: issue.title, description: issue.description, link: issue.link });
+            
+            const user = userMap.get(userId);
+            if (user && user.email) {
+              emailsToSend.push({
+                to: user.email,
+                subject: `Alerta Nexor: ${issue.title}`,
+                html: formatEmailBody(issue.title, issue.description, issue.link),
+              });
+            }
           }
         }
       }
@@ -126,7 +136,15 @@ serve(async (req) => {
       console.log(`[alert-generator] Nenhum novo alerta para criar.`);
     }
 
-    return new Response(JSON.stringify({ message: 'Verificação de alertas concluída.', created: alertsToCreate.length }), {
+    if (emailsToSend.length > 0) {
+      const emailPromises = emailsToSend.map(email => 
+        supabaseAdmin.functions.invoke('email-dispatcher', { body: email })
+      );
+      await Promise.all(emailPromises);
+      console.log(`[alert-generator] ${emailsToSend.length} emails despachados.`);
+    }
+
+    return new Response(JSON.stringify({ message: 'Verificação concluída.', created: alertsToCreate.length, emails: emailsToSend.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
