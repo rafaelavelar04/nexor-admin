@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -30,35 +30,25 @@ export function AuditLogDataTable<TData, TValue>({ columns, users }: DataTablePr
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['audit_logs', pagination, sorting, debouncedSearchTerm, selectedUser, dateRange],
     queryFn: async () => {
-      let query = supabase
-        .from('audit_logs')
-        .select('*, user:profiles!user_id(full_name)', { count: 'exact' });
+      const toDate = dateRange?.to ? new Date(dateRange.to) : null;
+      if (toDate) toDate.setHours(23, 59, 59, 999);
 
-      if (debouncedSearchTerm) {
-        query = query.or(`action.ilike.%${debouncedSearchTerm}%,entity.ilike.%${debouncedSearchTerm}%`);
-      }
-      if (selectedUser !== 'all') {
-        query = query.eq('user_id', selectedUser);
-      }
-      if (dateRange?.from) {
-        query = query.gte('created_at', dateRange.from.toISOString());
-      }
-      if (dateRange?.to) {
-        const toDate = new Date(dateRange.to);
-        toDate.setHours(23, 59, 59, 999); // Include the whole day
-        query = query.lte('created_at', toDate.toISOString());
-      }
+      const { data, error } = await supabase.rpc('get_audit_logs_for_admin', {
+        page_limit: pagination.pageSize,
+        page_offset: pagination.pageIndex * pagination.pageSize,
+        sort_column: sorting[0]?.id || 'created_at',
+        sort_direction: sorting[0]?.desc ? 'desc' : 'asc',
+        search_term: debouncedSearchTerm || null,
+        user_id_filter: selectedUser === 'all' ? null : selectedUser,
+        start_date: dateRange?.from ? dateRange.from.toISOString() : null,
+        end_date: toDate ? toDate.toISOString() : null,
+      });
 
-      query = query
-        .order(sorting[0].id, { ascending: !sorting[0].desc })
-        .range(pagination.pageIndex * pagination.pageSize, (pagination.pageIndex + 1) * pagination.pageSize - 1);
-
-      const { data, error, count } = await query;
       if (error) throw error;
-      return { data, count };
+      return data;
     },
   });
 
@@ -121,7 +111,13 @@ export function AuditLogDataTable<TData, TValue>({ columns, users }: DataTablePr
             {isLoading ? (
               <TableRow><TableCell colSpan={columns.length} className="h-24 text-center"><Loader2 className="mx-auto w-6 h-6 animate-spin" /></TableCell></TableRow>
             ) : isError ? (
-              <TableRow><TableCell colSpan={columns.length} className="h-24 text-center text-destructive">Erro ao carregar logs.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={columns.length} className="h-24 text-center text-destructive">
+                <div className="flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6" />
+                  <span>Erro ao carregar os logs de auditoria.</span>
+                  <small className="text-muted-foreground">{error.message}</small>
+                </div>
+              </TableCell></TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
@@ -131,14 +127,19 @@ export function AuditLogDataTable<TData, TValue>({ columns, users }: DataTablePr
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Nenhum log encontrado.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Nenhum log encontrado para os filtros aplicados.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Anterior</Button>
-        <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Próximo</Button>
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="text-sm text-muted-foreground">
+          Total de {data?.count ?? 0} logs.
+        </div>
+        <div className="space-x-2">
+          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Anterior</Button>
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Próximo</Button>
+        </div>
       </div>
     </div>
   );
