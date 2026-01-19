@@ -67,7 +67,7 @@ const FinancePage = () => {
           icon={<DollarSign className="w-12 h-12" />}
           title="Nenhum contrato encontrado"
           description="Crie o primeiro contrato a partir de uma oportunidade ganha ou manualmente para começar a monitorar sua receita."
-          cta={canManage ? { text: "Criar Primeiro Contrato", onClick: () => setIsFormOpen(true) } : undefined}
+          cta={canManage ? { text: "Criar Primeiro Contrato", onClick: () => { setSelectedContract(null); setIsFormOpen(true); } } : undefined}
         />
       );
     }
@@ -82,7 +82,7 @@ const FinancePage = () => {
           <p className="text-muted-foreground mt-1">Gerencie contratos e acompanhe a receita da sua empresa.</p>
         </div>
         {canManage && (
-          <Button onClick={() => setIsFormOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button onClick={() => { setSelectedContract(null); setIsFormOpen(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <PlusCircle className="w-4 h-4 mr-2" />
             Novo Contrato
           </Button>

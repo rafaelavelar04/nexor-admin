@@ -22,7 +22,7 @@ export type Receivable = {
     companies: {
       nome: string;
     } | null;
-  } | null;
+  }; // Removido o | null por causa do inner join
 };
 
 const statusConfig = {
@@ -51,7 +51,7 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
   {
     id: "empresa",
     header: "Empresa",
-    accessorFn: row => row.contracts?.companies?.nome,
+    accessorFn: row => row.contracts.companies?.nome,
   },
   {
     accessorKey: "installment_number",
@@ -84,8 +84,8 @@ export const getReceivablesColumns = (onMarkAsPaid: (id: string, isPaid: boolean
   {
     id: "tipo_pagamento",
     header: "Tipo",
-    accessorFn: row => row.contracts?.tipo_pagamento,
-    cell: ({ row }) => <span className="capitalize">{row.original.contracts?.tipo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
+    accessorFn: row => row.contracts.tipo_pagamento,
+    cell: ({ row }) => <span className="capitalize">{row.original.contracts.tipo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
   },
   {
     id: "actions",

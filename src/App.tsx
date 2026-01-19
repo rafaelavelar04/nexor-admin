@@ -22,6 +22,7 @@ import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 import ActivitiesPage from "./pages/admin/ActivitiesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import FinancePage from "./pages/admin/FinancePage";
+import ContractDetailPage from "./pages/admin/finance/ContractDetailPage";
 import OnboardingPage from "./pages/admin/OnboardingPage";
 import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage";
 import SupportPage from "./pages/admin/SupportPage";
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="insights" element={<InsightsPage />} />
                   <Route path="financeiro" element={<FinancePage />} />
+                  <Route path="financeiro/:id" element={<ContractDetailPage />} />
                   <Route path="onboarding" element={<OnboardingPage />} />
                   <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
                   <Route path="suporte" element={<SupportPage />} />

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, DollarSign } from 'lucide-react';
 import { EmptyState } from '@/components/common/EmptyState';
 import { getReceivablesColumns, Receivable } from '@/components/finance/ReceivablesTableColumns';
-import { ContractsDataTable } from '@/components/finance/ContractsDataTable'; // Reusing for now
+import { ReceivablesDataTable } from '@/components/finance/ReceivablesDataTable';
 import { showSuccess, showError } from '@/utils/toast';
 
 const ReceivablesTab = () => {
@@ -58,7 +58,7 @@ const ReceivablesTab = () => {
     );
   }
 
-  return <ContractsDataTable columns={columns} data={receivables} />;
+  return <ReceivablesDataTable columns={columns} data={receivables} />;
 };
 
 export default ReceivablesTab;

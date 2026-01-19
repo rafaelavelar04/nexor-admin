@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/formatters";
+import { useNavigate } from "react-router-dom";
 
 export type Contract = {
   id: string;
@@ -75,13 +76,17 @@ export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Cont
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(row.original)}>Editar</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      const navigate = useNavigate();
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/admin/financeiro/${row.original.id}`)}>Ver Detalhes</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(row.original)}>Editar Contrato</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   },
 ];
