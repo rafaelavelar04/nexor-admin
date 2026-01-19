@@ -26,35 +26,31 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Efeito 1: Gerencia a sessão do Supabase (login, logout, refresh)
+  const logout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('nexor-session-id');
+  };
+
   useEffect(() => {
-    // Pega a sessão inicial para acelerar o carregamento da UI
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("[SessionContext] Initial session fetched.");
       setSession(session);
       setUser(session?.user ?? null);
     });
 
-    // Escuta por mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("[SessionContext] Auth state changed, event:", _event);
       setSession(session);
       setUser(session?.user ?? null);
+      if (_event === 'SIGNED_OUT') {
+        localStorage.removeItem('nexor-session-id');
+      }
     });
 
-    // Limpa a inscrição ao desmontar o componente
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Efeito 2: Busca o perfil do usuário sempre que o 'user' mudar
   useEffect(() => {
-    // Se existe um usuário, busca o perfil
     if (user) {
       setLoading(true);
-      console.log(`[SessionContext] User detected (${user.id}), fetching profile...`);
-      
       supabase
         .from('profiles')
         .select('full_name, avatar_url, role, active')
@@ -62,39 +58,68 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("[SessionContext] Error fetching profile:", error.message);
             showError("Não foi possível carregar seu perfil.");
-            setProfile(null); // Define o perfil como nulo em caso de erro
+            setProfile(null);
           } else {
-            console.log("[SessionContext] Profile fetched successfully.");
             setProfile(data);
           }
         })
-        .finally(() => {
-          // Garante que o loading sempre termine, mesmo com erro
-          console.log("[SessionContext] Profile fetch flow finished. Loading set to false.");
-          setLoading(false);
-        });
+        .finally(() => setLoading(false));
     } else {
-      // Se não há usuário, não há perfil para buscar e o carregamento termina
-      console.log("[SessionContext] No user found. Clearing profile and finishing loading.");
       setProfile(null);
       setLoading(false);
     }
-  }, [user]); // Este efeito roda apenas quando o objeto 'user' muda
+  }, [user]);
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    // O onAuthStateChange cuidará de limpar os estados de session, user e profile.
-  };
+  useEffect(() => {
+    const SESSION_ID_KEY = 'nexor-session-id';
+    let sessionId = localStorage.getItem(SESSION_ID_KEY);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem(SESSION_ID_KEY, sessionId);
+    }
 
-  const value = {
-    session,
-    user,
-    profile,
-    loading,
-    logout,
-  };
+    let heartbeatInterval: number | undefined;
+
+    const sendHeartbeat = async () => {
+      if (!supabase || !user || !sessionId) return;
+
+      try {
+        const { error, status } = await supabase.functions.invoke('create-or-update-session', {
+          body: {
+            session_id: sessionId,
+            user_agent: navigator.userAgent,
+          },
+        });
+
+        if (status === 401) {
+          console.warn('[SessionContext] Sessão revogada por um administrador. Desconectando.');
+          showError("Sua sessão foi revogada e você foi desconectado.");
+          await logout();
+          return;
+        }
+
+        if (error) {
+          console.error('[SessionContext] Falha no heartbeat:', error.message);
+        }
+      } catch (e) {
+        console.error('[SessionContext] Exceção no heartbeat:', e);
+      }
+    };
+
+    if (user) {
+      sendHeartbeat();
+      heartbeatInterval = setInterval(sendHeartbeat, 3 * 60 * 1000); // A cada 3 minutos
+    }
+
+    return () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+    };
+  }, [user]);
+
+  const value = { session, user, profile, loading, logout };
 
   return (
     <SessionContext.Provider value={value}>

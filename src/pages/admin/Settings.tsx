@@ -5,6 +5,7 @@ import UserSettings from "@/components/settings/UserSettings";
 import SystemSettings from "@/components/settings/SystemSettings";
 import AuditLogSettings from "@/components/settings/AuditLogSettings";
 import WebhookSettings from "@/components/settings/WebhookSettings";
+import ActiveSessionsSettings from "@/components/settings/ActiveSessionsSettings";
 import { ShieldAlert } from "lucide-react";
 
 const SettingsPage = () => {
@@ -21,9 +22,10 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-6">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
+          <TabsTrigger value="sessions" disabled={!isAdmin}>Sessões</TabsTrigger>
           <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
           <TabsTrigger value="audit" disabled={!isAdmin}>Auditoria</TabsTrigger>
           <TabsTrigger value="webhooks" disabled={!isAdmin}>Webhooks</TabsTrigger>
@@ -35,6 +37,10 @@ const SettingsPage = () => {
         
         <TabsContent value="users" className="mt-6">
           {isAdmin ? <UserSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="sessions" className="mt-6">
+          {isAdmin ? <ActiveSessionsSettings /> : <AccessDenied />}
         </TabsContent>
         
         <TabsContent value="system" className="mt-6">
