@@ -18,6 +18,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { DecisoresFormSection } from '@/components/leads/DecisoresFormSection';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
