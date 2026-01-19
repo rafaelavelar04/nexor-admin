@@ -43,7 +43,7 @@ serve(async (req) => {
 
     if (upsertError) throw upsertError
 
-    // Se a sessão foi revogada, informa o cliente
+    // Se a sessão foi revogada, informa o cliente para forçar o logout.
     if (sessionData?.revoked_at) {
       return new Response(JSON.stringify({ status: 'revoked' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

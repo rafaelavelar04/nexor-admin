@@ -27,7 +27,7 @@ serve(async (req) => {
       .select('role')
       .eq('id', adminUser.id)
       .single()
-    if (profileError || adminProfile?.role !== 'admin') {
+    if (profileError || !is_admin()) {
       throw new Error('Apenas administradores podem revogar sessões.')
     }
 

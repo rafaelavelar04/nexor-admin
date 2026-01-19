@@ -8,10 +8,13 @@ import WebhookSettings from "@/components/settings/WebhookSettings";
 import ActiveSessionsSettings from "@/components/settings/ActiveSessionsSettings";
 import RoleSettings from "@/components/settings/RoleSettings";
 import { ShieldAlert } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const SettingsPage = () => {
   const { profile } = useSession();
   const isAdmin = profile?.role === 'admin';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'profile';
 
   return (
     <div className="space-y-6">
@@ -22,7 +25,7 @@ const SettingsPage = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue={defaultTab} onValueChange={(tab) => setSearchParams({ tab })} className="w-full">
         <TabsList className="grid w-full grid-cols-1 sm:w-auto sm:grid-cols-7">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>Usuários</TabsTrigger>
