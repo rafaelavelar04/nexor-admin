@@ -13,7 +13,6 @@ import useLocalStorage from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PwaUpdater } from "../common/PwaUpdater";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -104,7 +103,6 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <PwaUpdater />
       {/* Mobile Sidebar */}
       <div
         className={`fixed inset-0 z-40 flex transition-transform duration-300 ease-in-out md:hidden ${
