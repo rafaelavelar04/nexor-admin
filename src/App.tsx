@@ -21,6 +21,9 @@ import CompaniesPage from "./pages/admin/CompaniesPage";
 import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 import ActivitiesPage from "./pages/admin/ActivitiesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
+import InsightsPage from "./pages/admin/InsightsPage";
+import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
+import ForecastPage from "./pages/admin/ForecastPage";
 import FinancePage from "./pages/admin/FinancePage";
 import ContractDetailPage from "./pages/admin/finance/ContractDetailPage";
 import OnboardingPage from "./pages/admin/OnboardingPage";
@@ -28,10 +31,6 @@ import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage"
 import SupportPage from "./pages/admin/SupportPage";
 import TicketFormPage from "./pages/admin/support/TicketFormPage";
 import AlertsPage from "./pages/admin/AlertsPage";
-import InsightsPage from "./pages/admin/InsightsPage";
-import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
-import ForecastPage from "./pages/admin/ForecastPage";
-import { PwaUpdater } from "./components/common/PwaUpdater";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +41,6 @@ const App = () => (
       <Sonner />
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <SessionProvider>
-          <PwaUpdater />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
