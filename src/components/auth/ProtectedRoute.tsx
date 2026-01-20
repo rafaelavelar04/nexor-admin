@@ -14,15 +14,21 @@ const AuthErrorDisplay = ({ error, onLogout }: { error: string, onLogout: () => 
   </div>
 );
 
+const FullScreenLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+    <img src="/branding/Nexor SF.png" alt="Nexor Logo" className="mx-auto h-auto w-[200px] md:w-[260px] mb-6" />
+    <div className="flex items-center gap-3">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <p className="text-muted-foreground">Carregando sua sessão...</p>
+    </div>
+  </div>
+);
+
 const ProtectedRoute = () => {
   const { session, profile, loading, error, logout } = useSession();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (error) {
@@ -37,9 +43,6 @@ const ProtectedRoute = () => {
     return <AuthErrorDisplay error="Sua conta de usuário está inativa. Por favor, contate um administrador." onLogout={logout} />;
   }
 
-  // Se a sessão existe mas o perfil não carregou (e não deu erro),
-  // pode ser um estado transitório. O Outlet renderiza o layout que pode ter sua própria lógica de loading.
-  // O erro de perfil não carregado já é tratado pelo `error` state.
   return <Outlet />;
 };
 

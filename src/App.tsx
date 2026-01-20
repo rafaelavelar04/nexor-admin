@@ -31,6 +31,7 @@ import AlertsPage from "./pages/admin/AlertsPage";
 import InsightsPage from "./pages/admin/InsightsPage";
 import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
 import ForecastPage from "./pages/admin/ForecastPage";
+import { PwaUpdater } from "./components/common/PwaUpdater";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
       <Sonner />
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <SessionProvider>
+          <PwaUpdater />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
