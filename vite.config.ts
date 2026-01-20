@@ -12,6 +12,10 @@ export default defineConfig(() => ({
     react(),
     VitePWA({
       registerType: 'prompt',
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+      },
       devOptions: {
         enabled: true,
       },
