@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
 
 interface Profile {
   full_name: string;
@@ -15,6 +14,7 @@ interface SessionContextValue {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  error: string | null; // Adicionado estado de erro
   logout: () => Promise<void>;
 }
 
@@ -25,23 +25,23 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Adicionado estado de erro
 
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('nexor-session-id');
+    setProfile(null);
+    setError(null);
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setError(null); // Limpa o erro em mudança de autenticação
       if (_event === 'SIGNED_OUT') {
         localStorage.removeItem('nexor-session-id');
+        setProfile(null);
       }
     });
 
@@ -49,28 +49,41 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      setLoading(true);
-      supabase
-        .from('profiles')
-        .select('full_name, avatar_url, role, active')
-        .eq('id', user.id)
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            showError("Não foi possível carregar seu perfil.");
-            setProfile(null);
-          } else {
-            setProfile(data);
-          }
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setProfile(null);
-      setLoading(false);
-    }
-  }, [user]);
+    const fetchInitialSession = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        setError("Falha ao obter a sessão.");
+        setLoading(false);
+        return;
+      }
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        try {
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url, role, active')
+            .eq('id', session.user.id)
+            .single();
 
+          if (profileError) {
+            throw new Error(profileError.message);
+          }
+          setProfile(data);
+        } catch (e: any) {
+          console.error("Erro crítico ao carregar perfil:", e.message);
+          setError("Não foi possível carregar seu perfil. A configuração de segurança pode estar impedindo o acesso.");
+          setProfile(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchInitialSession();
+  }, []);
+
+  // Heartbeat (sem alterações, mas mantido)
   useEffect(() => {
     const SESSION_ID_KEY = 'nexor-session-id';
     let sessionId = localStorage.getItem(SESSION_ID_KEY);
@@ -94,7 +107,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
         if (status === 401) {
           console.warn('[SessionContext] Sessão revogada por um administrador. Desconectando.');
-          showError("Sua sessão foi revogada e você foi desconectado.");
+          setError("Sua sessão foi revogada e você foi desconectado.");
           await logout();
           return;
         }
@@ -109,7 +122,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
     if (user) {
       sendHeartbeat();
-      heartbeatInterval = setInterval(sendHeartbeat, 3 * 60 * 1000); // A cada 3 minutos
+      heartbeatInterval = setInterval(sendHeartbeat, 3 * 60 * 1000);
     }
 
     return () => {
@@ -119,7 +132,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const value = { session, user, profile, loading, logout };
+  const value = { session, user, profile, loading, error, logout };
 
   return (
     <SessionContext.Provider value={value}>
