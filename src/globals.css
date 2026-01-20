@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   :root {
     --background: 240 5% 96%; /* Off-white */
     --foreground: 240 10% 3.9%; /* Dark Slate */
@@ -73,6 +79,7 @@
 
   body {
     @apply bg-background text-foreground;
+    overflow: hidden; /* Impede o scroll no body */
     font-feature-settings: "rlig" 1, "calt" 1;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
