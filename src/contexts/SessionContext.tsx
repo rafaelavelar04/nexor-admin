@@ -14,7 +14,7 @@ interface SessionContextValue {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  error: string | null; // Adicionado estado de erro
+  error: string | null;
   logout: () => Promise<void>;
 }
 
@@ -25,7 +25,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Adicionado estado de erro
+  const [error, setError] = useState<string | null>(null);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -35,55 +35,72 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setError(null); // Limpa o erro em mudança de autenticação
-      if (_event === 'SIGNED_OUT') {
-        localStorage.removeItem('nexor-session-id');
-        setProfile(null);
-      }
-    });
+    const fetchSessionAndProfile = async () => {
+      setLoading(true);
+      setError(null);
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fetchInitialSession = async () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         setError("Falha ao obter a sessão.");
         setLoading(false);
         return;
       }
+
       setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
         try {
           const { data, error: profileError } = await supabase
             .from('profiles')
             .select('full_name, avatar_url, role, active')
-            .eq('id', session.user.id)
+            .eq('id', currentUser.id)
             .single();
 
           if (profileError) {
+            // Se o perfil não for encontrado, pode ser um erro de RLS ou o perfil realmente não existe.
+            // A mensagem de erro genérica é mais segura.
             throw new Error(profileError.message);
           }
-          setProfile(data);
+          
+          // Se o campo 'active' não existir no retorno, assumimos como true para não bloquear o usuário.
+          const userProfile = {
+            ...data,
+            active: data.active === false ? false : true,
+          };
+          setProfile(userProfile);
+
         } catch (e: any) {
           console.error("Erro crítico ao carregar perfil:", e.message);
-          setError("Não foi possível carregar seu perfil. A configuração de segurança pode estar impedindo o acesso.");
+          setError("Não foi possível carregar seu perfil. As permissões de segurança podem estar impedindo o acesso ou o perfil não foi encontrado.");
           setProfile(null);
         }
       }
       setLoading(false);
     };
 
-    fetchInitialSession();
+    fetchSessionAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (_event === 'SIGNED_IN') {
+        fetchSessionAndProfile();
+      } else if (_event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setError(null);
+        localStorage.removeItem('nexor-session-id');
+      } else {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Heartbeat (sem alterações, mas mantido)
+  // Heartbeat
   useEffect(() => {
     const SESSION_ID_KEY = 'nexor-session-id';
     let sessionId = localStorage.getItem(SESSION_ID_KEY);
@@ -98,7 +115,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       if (!supabase || !user || !sessionId) return;
 
       try {
-        const { error, status } = await supabase.functions.invoke('create-or-update-session', {
+        const { error: invokeError, status } = await supabase.functions.invoke('create-or-update-session', {
           body: {
             session_id: sessionId,
             user_agent: navigator.userAgent,
@@ -112,8 +129,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        if (error) {
-          console.error('[SessionContext] Falha no heartbeat:', error.message);
+        if (invokeError) {
+          console.error('[SessionContext] Falha no heartbeat:', invokeError.message);
         }
       } catch (e) {
         console.error('[SessionContext] Exceção no heartbeat:', e);

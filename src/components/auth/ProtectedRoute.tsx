@@ -33,10 +33,13 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!profile?.active) {
+  if (profile && profile.active === false) {
     return <AuthErrorDisplay error="Sua conta de usuário está inativa. Por favor, contate um administrador." onLogout={logout} />;
   }
 
+  // Se a sessão existe mas o perfil não carregou (e não deu erro),
+  // pode ser um estado transitório. O Outlet renderiza o layout que pode ter sua própria lógica de loading.
+  // O erro de perfil não carregado já é tratado pelo `error` state.
   return <Outlet />;
 };
 
