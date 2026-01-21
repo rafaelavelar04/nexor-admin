@@ -1,12 +1,19 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createAlertIfNotExists } from '../_shared/utils.ts'
-import { formatCurrency } from 'https://deno.land/x/format_currency/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const formatCurrency = (value: number) => {
+  if (typeof value !== 'number') return 'R$ 0,00';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+};
 
 interface Issue {
   title: string;
@@ -68,7 +75,7 @@ async function processRule(client: SupabaseClient, rule: any): Promise<Issue[]> 
         rpcParams = {};
         mapper = (item: any) => ({
             title: `Recebível de ${item.company_name} atrasado`,
-            description: `A parcela de ${formatCurrency(item.amount, { code: 'BRL', language: 'pt-BR' })} venceu em ${new Date(item.due_date).toLocaleDateString('pt-BR')}.`,
+            description: `A parcela de ${formatCurrency(item.amount)} venceu em ${new Date(item.due_date).toLocaleDateString('pt-BR')}.`,
             link: `/admin/financeiro/${item.contract_id}`,
             responsible_id: item.responsavel_id,
         });
@@ -78,7 +85,7 @@ async function processRule(client: SupabaseClient, rule: any): Promise<Issue[]> 
         rpcParams = { days_stale: rule.threshold };
         mapper = (item: any) => ({
             title: `Custo previsto para ${item.partner_name} antigo`,
-            description: `O custo de ${formatCurrency(item.valor, { code: 'BRL', language: 'pt-BR' })} está como "previsto" há mais de ${rule.threshold} dias.`,
+            description: `O custo de ${formatCurrency(item.valor)} está como "previsto" há mais de ${rule.threshold} dias.`,
             link: `/admin/financeiro/${item.contract_id}`,
             responsible_id: item.responsavel_id,
         });
@@ -88,7 +95,7 @@ async function processRule(client: SupabaseClient, rule: any): Promise<Issue[]> 
         rpcParams = { performance_threshold: rule.threshold };
         mapper = (item: any) => ({
             title: `Meta de ${item.full_name || 'Global'} em risco`,
-            description: `Atingimento de ${formatCurrency(item.achieved_value, { code: 'BRL', language: 'pt-BR' })} de ${formatCurrency(item.valor, { code: 'BRL', language: 'pt-BR' })} (${((item.achieved_value / item.valor) * 100).toFixed(1)}%).`,
+            description: `Atingimento de ${formatCurrency(item.achieved_value)} de ${formatCurrency(item.valor)} (${((item.achieved_value / item.valor) * 100).toFixed(1)}%).`,
             link: `/admin/metas`,
             responsible_id: item.responsavel_id,
         });
