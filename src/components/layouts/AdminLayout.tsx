@@ -3,7 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck, AreaChart
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -17,6 +17,7 @@ import { PwaUpdater } from "../common/PwaUpdater";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "Dashboards", href: "/admin/dashboards", icon: AreaChart },
   { name: "Leads", href: "/admin/leads", icon: Users },
   { name: "Oportunidades", href: "/admin/opportunities", icon: Briefcase },
   { name: "Onboarding", href: "/admin/onboarding", icon: ClipboardCheck },

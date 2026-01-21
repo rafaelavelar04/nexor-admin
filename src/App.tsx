@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminLayout from "./components/layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
+import DashboardsPage from "./pages/admin/DashboardsPage";
 import LeadsPage from "./pages/admin/Leads";
 import LeadFormPage from "./pages/admin/leads/LeadFormPage";
 import Opportunities from "./pages/admin/Opportunities";
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboards" element={<DashboardsPage />} />
                   <Route path="leads" element={<LeadsPage />} />
                   <Route path="leads/novo" element={<LeadFormPage />} />
                   <Route path="leads/:id" element={<LeadFormPage />} />
