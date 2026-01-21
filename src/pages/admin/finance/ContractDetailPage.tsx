@@ -42,20 +42,20 @@ const ContractDetailPage = () => {
     mutationFn: async ({ receivableId, isPaid }: { receivableId: string, isPaid: boolean }) => {
       const status = isPaid ? 'pago' : 'pendente';
       const paid_at = isPaid ? new Date().toISOString() : null;
-      const { error } = await supabase.from('receivables').update({ status, paid_at }).eq('id', receivableId);
+      const { error } = await supabase.from('contract_receivables').update({ status, paid_at }).eq('id', receivableId);
       if (error) throw error;
     },
     onSuccess: () => {
       showSuccess("Status da parcela atualizado!");
       queryClient.invalidateQueries({ queryKey: ['contractDetail', id] });
-      queryClient.invalidateQueries({ queryKey: ['receivables'] });
+      queryClient.invalidateQueries({ queryKey: ['contract_receivables'] });
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
   });
 
   const updateDueDateMutation = useMutation({
     mutationFn: async ({ receivableId, newDate }: { receivableId: string, newDate: Date }) => {
-      const { error } = await supabase.from('receivables').update({ due_date: newDate.toISOString().split('T')[0] }).eq('id', receivableId);
+      const { error } = await supabase.from('contract_receivables').update({ due_date: newDate.toISOString().split('T')[0] }).eq('id', receivableId);
       if (error) throw error;
     },
     onMutate: ({ receivableId }) => {
