@@ -34,8 +34,17 @@ import AlertsPage from "./pages/admin/AlertsPage";
 import PartnersPage from "./pages/admin/PartnersPage";
 import PartnerFormPage from "./pages/admin/partners/PartnerFormPage";
 import AssignmentsPage from "./pages/admin/AssignmentsPage";
+import { config } from "./config";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: config.queryClientConfig.staleTime,
+      cacheTime: config.queryClientConfig.cacheTime,
+      refetchOnWindowFocus: false, // Evita refetchs desnecessários
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

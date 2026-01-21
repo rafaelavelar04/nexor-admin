@@ -3,7 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck, AreaChart
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaUpdater } from "../common/PwaUpdater";
+import { config } from "@/config";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -116,7 +117,7 @@ const AdminLayout = () => {
         <div className="w-64 bg-card border-r border-border p-4 flex flex-col">
           <div className="flex items-center justify-between mb-6 h-8">
             <Link to="/admin" className="flex items-center h-full">
-              <img src="/branding/Nexor SF.png" alt="Nexor" className="h-auto w-full max-w-[140px]" />
+              <img src={config.branding.logo} alt={config.branding.appName} className="h-auto w-full max-w-[140px]" />
             </Link>
             <button onClick={() => setSidebarOpen(false)} className="text-muted-foreground hover:text-foreground">
               <X className="w-6 h-6" />
@@ -132,8 +133,8 @@ const AdminLayout = () => {
         <div className={cn("flex items-center justify-center mb-8 h-8 transition-all duration-300", isCollapsed ? "px-0" : "px-2")}>
           <Link to="/admin" className="transition-transform duration-300 hover:scale-105">
             <img 
-              src={isCollapsed ? "/branding/Nexor - SF2.png" : "/branding/Nexor SF.png"} 
-              alt="Nexor" 
+              src={isCollapsed ? config.branding.logoCollapsed : config.branding.logo} 
+              alt={config.branding.appName} 
               className={cn("transition-all duration-300", isCollapsed ? "h-8 w-8" : "h-auto w-full max-w-[140px]")}
             />
           </Link>
