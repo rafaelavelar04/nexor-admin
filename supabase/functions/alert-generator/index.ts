@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createAlertIfNotExists } from '../_shared/utils.ts'
+import { formatCurrency } from 'https://deno.land/x/format_currency/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,52 +15,94 @@ interface Issue {
   responsible_id: string | null;
 }
 
-// Funções de verificação de regras (sem alterações)
-async function processLeadUncontacted(client: SupabaseClient, rule: any): Promise<Issue[]> {
-  const threshold = rule.threshold || 2;
-  const { data, error } = await client.rpc('query_uncontacted_leads', { days_old: threshold });
+// Funções de processamento de regras
+async function processRule(client: SupabaseClient, rule: any): Promise<Issue[]> {
+  let rpcName = '';
+  let rpcParams: any = {};
+  let mapper: (item: any) => Issue;
+
+  switch (rule.id) {
+    case 'lead-uncontacted':
+      rpcName = 'query_uncontacted_leads';
+      rpcParams = { days_old: rule.threshold };
+      mapper = (item: any) => ({
+        title: `Lead "${item.nome}" não contatado`,
+        description: `O lead "${item.nome}" foi criado há mais de ${rule.threshold} dias e ainda não foi contatado.`,
+        link: `/admin/leads/${item.id}`,
+        responsible_id: item.responsavel_id,
+      });
+      break;
+    case 'lead-followup-overdue':
+      rpcName = 'query_followup_overdue_leads';
+      rpcParams = { days_overdue: rule.threshold };
+      mapper = (item: any) => ({
+        title: `Follow-up de "${item.nome}" atrasado`,
+        description: `O follow-up agendado para ${new Date(item.proximo_followup).toLocaleDateString('pt-BR')} está atrasado.`,
+        link: `/admin/leads/${item.id}`,
+        responsible_id: item.responsavel_id,
+      });
+      break;
+    case 'opp-stagnant-stage':
+      rpcName = 'query_stagnant_opportunities';
+      rpcParams = { days_stagnant: rule.threshold };
+      mapper = (item: any) => ({
+        title: `Oportunidade "${item.titulo}" estagnada`,
+        description: `A oportunidade "${item.titulo}" não é atualizada há mais de ${rule.threshold} dias.`,
+        link: `/admin/opportunities/${item.id}`,
+        responsible_id: item.responsavel_id,
+      });
+      break;
+    case 'ticket-stale':
+    case 'ticket-urgent-stale':
+        rpcName = 'query_stale_tickets';
+        rpcParams = { hours_stale: rule.threshold };
+        mapper = (item: any) => ({
+            title: `Ticket "${item.title}" parado`,
+            description: `O ticket não recebe uma atualização há mais de ${rule.threshold} horas.`,
+            link: `/admin/suporte/${item.id}`,
+            responsible_id: item.owner_id,
+        });
+        break;
+    case 'receivable-overdue':
+        rpcName = 'query_overdue_receivables';
+        rpcParams = {};
+        mapper = (item: any) => ({
+            title: `Recebível de ${item.company_name} atrasado`,
+            description: `A parcela de ${formatCurrency(item.amount, { code: 'BRL', language: 'pt-BR' })} venceu em ${new Date(item.due_date).toLocaleDateString('pt-BR')}.`,
+            link: `/admin/financeiro/${item.contract_id}`,
+            responsible_id: item.responsavel_id,
+        });
+        break;
+    case 'cost-unpaid':
+        rpcName = 'query_unpaid_costs';
+        rpcParams = { days_stale: rule.threshold };
+        mapper = (item: any) => ({
+            title: `Custo previsto para ${item.partner_name} antigo`,
+            description: `O custo de ${formatCurrency(item.valor, { code: 'BRL', language: 'pt-BR' })} está como "previsto" há mais de ${rule.threshold} dias.`,
+            link: `/admin/financeiro/${item.contract_id}`,
+            responsible_id: item.responsavel_id,
+        });
+        break;
+    case 'goal-at-risk':
+        rpcName = 'query_at_risk_goals';
+        rpcParams = { performance_threshold: rule.threshold };
+        mapper = (item: any) => ({
+            title: `Meta de ${item.full_name || 'Global'} em risco`,
+            description: `Atingimento de ${formatCurrency(item.achieved_value, { code: 'BRL', language: 'pt-BR' })} de ${formatCurrency(item.valor, { code: 'BRL', language: 'pt-BR' })} (${((item.achieved_value / item.valor) * 100).toFixed(1)}%).`,
+            link: `/admin/metas`,
+            responsible_id: item.responsavel_id,
+        });
+        break;
+    default:
+      return [];
+  }
+
+  const { data, error } = await client.rpc(rpcName, rpcParams);
   if (error) {
-    console.error(`[alert-generator] Erro na regra ${rule.id}:`, error.message);
+    console.error(`[alert-generator] Erro na regra ${rule.id} (RPC: ${rpcName}):`, error.message);
     return [];
   }
-  return data.map((lead: any) => ({
-    title: `Lead "${lead.nome}" não contatado`,
-    description: `O lead "${lead.nome}" foi criado há mais de ${threshold} dias e ainda não foi contatado.`,
-    link: `/admin/leads/${lead.id}`,
-    responsible_id: lead.responsavel_id,
-  }));
-}
-
-async function processOppStagnant(client: SupabaseClient, rule: any): Promise<Issue[]> {
-  const threshold = rule.threshold || 7;
-  const { data, error } = await client.rpc('query_stagnant_opportunities', { days_stagnant: threshold });
-  if (error) {
-    console.error(`[alert-generator] Erro na regra ${rule.id}:`, error.message);
-    return [];
-  }
-  return data.map((opp: any) => ({
-    title: `Oportunidade "${opp.titulo}" estagnada`,
-    description: `A oportunidade "${opp.titulo}" não é atualizada há mais de ${threshold} dias.`,
-    link: `/admin/opportunities/${opp.id}`,
-    responsible_id: opp.responsavel_id,
-  }));
-}
-
-// Função para formatar o corpo do email
-function formatEmailBody(title: string, description: string, link: string): string {
-  const projectUrl = Deno.env.get('SUPABASE_URL')?.split('.co')[0] + '.co';
-  const fullLink = `${projectUrl}${link}`;
-  return `
-    <div style="font-family: sans-serif; padding: 20px; color: #333;">
-      <h2 style="color: #007bff;">Novo Alerta no Nexor</h2>
-      <h3 style="font-size: 1.1em;">${title}</h3>
-      <p>${description}</p>
-      <a href="${fullLink}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 15px;">
-        Ver no Sistema
-      </a>
-      <p style="font-size: 0.8em; color: #888; margin-top: 20px;">Esta é uma notificação automática. Por favor, não responda a este email.</p>
-    </div>
-  `;
+  return data.map(mapper);
 }
 
 serve(async (req) => {
@@ -77,94 +121,32 @@ serve(async (req) => {
     const { data: rules, error: rulesError } = await supabaseAdmin.from('alert_rules').select('*').eq('enabled', true);
     if (rulesError) throw rulesError;
 
-    const { data: users, error: usersError } = await supabaseAdmin.from('profiles').select('id, role, user_email:users(email)');
-    if (usersError) throw usersError;
-    
-    const userMap = new Map(users.map((u: any) => [u.id, { role: u.role, email: u.user_email?.email }]));
-    const admins = users.filter((u: any) => u.role === 'admin');
-
-    const { data: allPreferences, error: prefsError } = await supabaseAdmin.from('user_notification_preferences').select('user_id, alert_rule_id, in_app_enabled, email_enabled');
-    if (prefsError) throw prefsError;
-
-    const prefsMap = new Map<string, Map<string, { in_app: boolean; email: boolean }>>();
-    for (const pref of allPreferences) {
-      if (!prefsMap.has(pref.user_id)) {
-        prefsMap.set(pref.user_id, new Map());
-      }
-      prefsMap.get(pref.user_id)!.set(pref.alert_rule_id, {
-        in_app: pref.in_app_enabled,
-        email: pref.email_enabled,
-      });
-    }
-
-    let alertsToCreate: any[] = [];
-    let emailsToSend: any[] = [];
+    const { data: admins, error: adminsError } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin');
+    if (adminsError) throw adminsError;
+    const adminIds = admins.map(a => a.id);
 
     for (const rule of rules) {
-      let foundIssues: Issue[] = [];
-      switch (rule.id) {
-        case 'lead-uncontacted':
-          foundIssues = await processLeadUncontacted(supabaseAdmin, rule);
-          break;
-        case 'opp-stagnant-stage':
-          foundIssues = await processOppStagnant(supabaseAdmin, rule);
-          break;
-      }
+      if (rule.module === 'Segurança') continue; // Ignora regras de segurança, tratadas em outra função
 
-      if (foundIssues.length > 0) {
-        const links = foundIssues.map(issue => issue.link);
-        const { data: existingAlerts } = await supabaseAdmin.from('alerts').select('link').eq('rule_id', rule.id).eq('archived', false).in('link', links);
-        const existingLinks = new Set((existingAlerts || []).map((a: any) => a.link));
-        const newIssues = foundIssues.filter(issue => !existingLinks.has(issue.link));
+      const foundIssues = await processRule(supabaseAdmin, rule);
 
-        for (const issue of newIssues) {
-          const targetUserIds = new Set<string>();
-          if (rule.visibility === 'responsible' || rule.visibility === 'both') {
-            if (issue.responsible_id) targetUserIds.add(issue.responsible_id);
-          }
-          if (rule.visibility === 'admin' || rule.visibility === 'both') {
-            admins.forEach((admin: any) => targetUserIds.add(admin.id));
-          }
+      for (const issue of foundIssues) {
+        const targetUserIds = new Set<string>();
+        if ((rule.visibility === 'responsible' || rule.visibility === 'both') && issue.responsible_id) {
+          targetUserIds.add(issue.responsible_id);
+        }
+        if (rule.visibility === 'admin' || rule.visibility === 'both') {
+          adminIds.forEach(id => targetUserIds.add(id));
+        }
 
-          for (const userId of targetUserIds) {
-            const userPrefs = prefsMap.get(userId)?.get(rule.id);
-            const inAppEnabled = userPrefs?.in_app ?? true;
-            const emailEnabled = userPrefs?.email ?? true;
-
-            if (inAppEnabled) {
-              alertsToCreate.push({ user_id: userId, rule_id: rule.id, title: issue.title, description: issue.description, link: issue.link });
-            }
-            
-            const user = userMap.get(userId);
-            if (emailEnabled && user && user.email) {
-              emailsToSend.push({
-                to: user.email,
-                subject: `Alerta Nexor: ${issue.title}`,
-                html: formatEmailBody(issue.title, issue.description, issue.link),
-              });
-            }
-          }
+        for (const userId of targetUserIds) {
+          await createAlertIfNotExists(supabaseAdmin, rule.id, userId, issue.title, issue.description, issue.link);
         }
       }
     }
 
-    if (alertsToCreate.length > 0) {
-      const { error: insertError } = await supabaseAdmin.from('alerts').insert(alertsToCreate);
-      if (insertError) throw insertError;
-      console.log(`[alert-generator] Criados ${alertsToCreate.length} novos alertas.`);
-    } else {
-      console.log(`[alert-generator] Nenhum novo alerta para criar.`);
-    }
-
-    if (emailsToSend.length > 0) {
-      const emailPromises = emailsToSend.map(email => 
-        supabaseAdmin.functions.invoke('email-dispatcher', { body: email })
-      );
-      await Promise.all(emailPromises);
-      console.log(`[alert-generator] ${emailsToSend.length} emails despachados.`);
-    }
-
-    return new Response(JSON.stringify({ message: 'Verificação concluída.', created: alertsToCreate.length, emails: emailsToSend.length }), {
+    console.log('[alert-generator] Verificação de alertas concluída.');
+    return new Response(JSON.stringify({ message: 'Verificação concluída.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

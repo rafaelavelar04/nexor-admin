@@ -1,42 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { subHours } from 'https://esm.sh/date-fns@2.30.0'
+import { createAlertIfNotExists } from '../_shared/utils.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Helper to avoid creating duplicate alerts
-async function createAlertIfNotExists(supabaseAdmin: SupabaseClient, rule_id: string, user_id: string, title: string, description: string, link: string) {
-  const { data: existingAlert, error: checkError } = await supabaseAdmin
-    .from('alerts')
-    .select('id')
-    .eq('rule_id', rule_id)
-    .eq('description', description) // Check description to make it more specific
-    .eq('archived', false)
-    .gte('created_at', subHours(new Date(), 24).toISOString()) // Don't create if a similar one exists in the last 24h
-    .maybeSingle();
-
-  if (checkError) {
-    console.error(`[security-monitor] Error checking for existing alert for rule ${rule_id}:`, checkError.message);
-    return;
-  }
-
-  if (!existingAlert) {
-    const { error: insertError } = await supabaseAdmin.from('alerts').insert({
-      user_id, // The admin user to be notified
-      rule_id,
-      title,
-      description,
-      link,
-    });
-    if (insertError) {
-      console.error(`[security-monitor] Error creating alert for rule ${rule_id}:`, insertError.message);
-    } else {
-      console.log(`[security-monitor] Created alert: ${title}`);
-    }
-  }
 }
 
 serve(async (req) => {
