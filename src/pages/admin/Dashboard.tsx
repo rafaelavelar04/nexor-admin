@@ -53,7 +53,7 @@ const Dashboard = () => {
       if (goalsError) throw goalsError;
 
       const { data: receivables, error: receivablesError } = await supabase
-        .from('receivables')
+        .from('contract_receivables')
         .select('amount, due_date, status, paid_at');
       if (receivablesError) throw receivablesError;
 
