@@ -27,9 +27,6 @@ const contractSchema = z.object({
   end_date: z.date().optional().nullable(),
   tipo_pagamento: z.enum(['pagamento_unico', 'parcelado', 'recorrente']),
   numero_parcelas: z.coerce.number().int().positive().optional().nullable(),
-  financial_status: z.enum(['previsto', 'aprovado', 'pago', 'atrasado', 'cancelado']),
-  due_date: z.date().optional().nullable(),
-  paid_at: z.date().optional().nullable(),
 }).refine(data => data.type === 'pontual' || !!data.billing_cycle, {
   message: "O ciclo de faturamento é obrigatório para contratos recorrentes.",
   path: ["billing_cycle"],
@@ -57,7 +54,6 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
   const contractType = form.watch('type');
   const paymentType = form.watch('tipo_pagamento');
-  const financialStatus = form.watch('financial_status');
 
   useEffect(() => {
     if (isOpen) {
@@ -66,10 +62,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
           ...contract,
           start_date: new Date(contract.start_date),
           end_date: contract.end_date ? new Date(contract.end_date) : null,
-          due_date: contract.due_date ? new Date(contract.due_date) : null,
-          paid_at: contract.paid_at ? new Date(contract.paid_at) : null,
           tipo_pagamento: contract.tipo_pagamento || 'pagamento_unico',
-          financial_status: contract.financial_status || 'previsto',
         });
         setSelectedCompany(contract.company_id);
       } else {
@@ -78,7 +71,6 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
           status: 'ativo',
           start_date: new Date(),
           tipo_pagamento: 'recorrente',
-          financial_status: 'previsto',
         });
         setSelectedCompany(undefined);
       }
@@ -107,13 +99,11 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
   const mutation = useMutation({
     mutationFn: async (data: ContractFormData) => {
-      const { start_date, end_date, due_date, paid_at, ...restOfData } = data;
+      const { start_date, end_date, ...restOfData } = data;
       const submissionData = {
         ...restOfData,
         start_date: start_date.toISOString().split('T')[0],
         end_date: end_date ? end_date.toISOString().split('T')[0] : null,
-        due_date: due_date ? due_date.toISOString().split('T')[0] : null,
-        paid_at: paid_at ? paid_at.toISOString() : null,
       };
 
       const { data: contractResult, error: contractError } = isEditMode
@@ -123,6 +113,8 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
       const contractId = contractResult.id;
 
+      // Regenerate receivables on every save for simplicity.
+      // In a future step, we can add logic to protect paid receivables.
       const { error: deleteError } = await supabase.from('receivables').delete().eq('contract_id', contractId);
       if (deleteError) throw deleteError;
 
@@ -130,10 +122,9 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
       if (data.tipo_pagamento === 'pagamento_unico') {
         newReceivables.push({
           contract_id: contractId,
-          due_date: data.due_date ? data.due_date.toISOString().split('T')[0] : data.start_date.toISOString().split('T')[0],
+          due_date: data.start_date.toISOString().split('T')[0],
           amount: data.value,
-          status: data.financial_status === 'pago' ? 'pago' : 'pendente',
-          paid_at: data.financial_status === 'pago' ? (data.paid_at || new Date()).toISOString() : null,
+          status: 'pendente',
           installment_number: 1,
         });
       } else if (data.tipo_pagamento === 'parcelado' && data.numero_parcelas && data.numero_parcelas > 0) {
@@ -141,13 +132,15 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
         for (let i = 0; i < data.numero_parcelas; i++) {
           newReceivables.push({
             contract_id: contractId,
-            due_date: addMonths(data.due_date || data.start_date, i).toISOString().split('T')[0],
+            due_date: addMonths(data.start_date, i).toISOString().split('T')[0],
             amount: installmentValue,
             status: 'pendente',
             installment_number: i + 1,
           });
         }
       }
+      // Note: Recurring payment logic will generate receivables in a future step,
+      // for now it just saves the contract info.
 
       if (newReceivables.length > 0) {
         const { error: insertError } = await supabase.from('receivables').insert(newReceivables);
@@ -173,7 +166,6 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            {/* ... (campos existentes) ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="company_id" render={({ field }) => (
                 <FormItem>
@@ -263,7 +255,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="start_date" render={({ field }) => (
                 <FormItem className="flex flex-col pt-2">
-                  <FormLabel className="mb-2">Data de Início</FormLabel>
+                  <FormLabel className="mb-2">Data de Início / 1º Vencimento</FormLabel>
                   <DatePicker date={field.value} setDate={field.onChange} />
                   <FormMessage />
                 </FormItem>
@@ -291,45 +283,6 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
                 <FormMessage />
               </FormItem>
             )} />
-            
-            <div className="border-t pt-4 space-y-4">
-                <h3 className="text-lg font-medium">Detalhes Financeiros</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="financial_status" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Status Financeiro</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    <SelectItem value="previsto">Previsto</SelectItem>
-                                    <SelectItem value="aprovado">Aprovado</SelectItem>
-                                    <SelectItem value="pago">Pago</SelectItem>
-                                    <SelectItem value="atrasado">Atrasado</SelectItem>
-                                    <SelectItem value="cancelado">Cancelado</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name="due_date" render={({ field }) => (
-                        <FormItem className="flex flex-col pt-2">
-                            <FormLabel className="mb-2">Data de Vencimento</FormLabel>
-                            <DatePicker date={field.value} setDate={field.onChange} />
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                    {financialStatus === 'pago' && (
-                        <FormField control={form.control} name="paid_at" render={({ field }) => (
-                            <FormItem className="flex flex-col pt-2">
-                                <FormLabel className="mb-2">Data de Pagamento</FormLabel>
-                                <DatePicker date={field.value} setDate={field.onChange} />
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                    )}
-                </div>
-            </div>
-
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
               <Button type="submit" disabled={mutation.isPending}>
