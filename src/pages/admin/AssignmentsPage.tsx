@@ -1,22 +1,40 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, PlusCircle, UserCheck } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/EmptyState';
+import { showSuccess, showError } from '@/utils/toast';
+// import { getColumns, Assignment } from '@/components/assignments/AssignmentsTableColumns';
+// import { AssignmentsDataTable } from '@/components/assignments/AssignmentsDataTable';
+// import { AssignmentFormDialog } from '@/components/assignments/AssignmentFormDialog';
 
 const AssignmentsPage = () => {
   const { profile } = useSession();
   const canManage = profile?.role === 'admin';
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  // const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
 
   const { data: assignments, isLoading, isError } = useQuery({
     queryKey: ['assignments'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('partner_assignments').select('*, partner:partners(nome), contract:contracts(id)');
+      const { data, error } = await supabase.from('partner_assignments').select('*, partner:partners(nome), contract:contracts(id), company:companies(nome)');
       if (error) throw error;
       return data || [];
     },
   });
+
+  const handleEdit = (assignment: any) => {
+    // setSelectedAssignment(assignment);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    alert(`Delete functionality for ${id} is in development.`);
+  };
+
+  // const columns = useMemo(() => getColumns(handleEdit, handleDelete, canManage), [canManage]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -31,7 +49,7 @@ const AssignmentsPage = () => {
           icon={<UserCheck className="w-12 h-12" />}
           title="Nenhuma alocação encontrada"
           description="Aloque parceiros a contratos ou projetos para começar a gerenciar os custos e a execução."
-          cta={canManage ? { text: "Nova Alocação", onClick: () => alert("Formulário em desenvolvimento") } : undefined}
+          cta={canManage ? { text: "Nova Alocação", onClick: () => setIsFormOpen(true) } : undefined}
         />
       );
     }
@@ -47,13 +65,18 @@ const AssignmentsPage = () => {
           <p className="text-muted-foreground mt-1">Gerencie os parceiros alocados em cada projeto e contrato.</p>
         </div>
         {canManage && (
-          <Button onClick={() => alert("Formulário em desenvolvimento")}>
+          <Button onClick={() => { /*setSelectedAssignment(null);*/ setIsFormOpen(true); }}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Nova Alocação
           </Button>
         )}
       </div>
       {renderContent()}
+      {/* <AssignmentFormDialog 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+        assignment={selectedAssignment}
+      /> */}
     </div>
   );
 };

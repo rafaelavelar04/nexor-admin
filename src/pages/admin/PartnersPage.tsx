@@ -7,9 +7,8 @@ import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
-// Placeholder for table components to be created
-// import { getColumns, Partner } from '@/components/partners/PartnersTableColumns';
-// import { PartnersDataTable } from '@/components/partners/PartnersDataTable';
+import { getColumns, Partner } from '@/components/partners/PartnersTableColumns';
+import { PartnersDataTable } from '@/components/partners/PartnersDataTable';
 
 const PartnersPage = () => {
   const queryClient = useQueryClient();
@@ -17,7 +16,7 @@ const PartnersPage = () => {
   const { profile } = useSession();
   const canManage = profile?.role === 'admin';
 
-  const { data: partners, isLoading, isError } = useQuery({
+  const { data: partners, isLoading, isError } = useQuery<Partner[]>({
     queryKey: ['partners'],
     queryFn: async () => {
       const { data, error } = await supabase.from('partners').select('*').order('nome');
@@ -25,6 +24,26 @@ const PartnersPage = () => {
       return data || [];
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('partners').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Parceiro excluído com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ['partners'] });
+    },
+    onError: (error: any) => showError(`Erro ao excluir: ${error.message}`),
+  });
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este parceiro?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const columns = useMemo(() => getColumns(handleDelete, canManage), [canManage]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -43,8 +62,7 @@ const PartnersPage = () => {
         />
       );
     }
-    // Placeholder until table is created
-    return <div className="rounded-md border p-4">Funcionalidade de tabela em desenvolvimento.</div>;
+    return <PartnersDataTable columns={columns} data={partners} />;
   };
 
   return (
