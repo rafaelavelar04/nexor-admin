@@ -13,7 +13,8 @@ import PlaybookSettings from "@/components/settings/PlaybookSettings";
 import PipelineSettings from "@/components/settings/PipelineSettings";
 import CostCenterSettings from "@/components/settings/CostCenterSettings";
 import { ShieldAlert } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
+import ImportHistoryPage from "./ImportHistoryPage";
 
 const SettingsPage = () => {
   const { profile } = useSession();
@@ -40,6 +41,7 @@ const SettingsPage = () => {
             <TabsTrigger value="pipeline" disabled={!isAdmin}>Pipeline</TabsTrigger>
             <TabsTrigger value="playbooks" disabled={!isAdmin}>Playbooks</TabsTrigger>
             <TabsTrigger value="cost_centers" disabled={!isAdmin}>Centros de Custo</TabsTrigger>
+            <TabsTrigger value="imports" disabled={!isAdmin}>Importações</TabsTrigger>
             <TabsTrigger value="sessions" disabled={!isAdmin}>Sessões</TabsTrigger>
             <TabsTrigger value="alerts" disabled={!isAdmin}>Alertas</TabsTrigger>
             <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
@@ -74,6 +76,10 @@ const SettingsPage = () => {
 
         <TabsContent value="cost_centers" className="mt-6">
           {isAdmin ? <CostCenterSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="imports" className="mt-6">
+          {isAdmin ? <ImportHistoryPage /> : <AccessDenied />}
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-6">

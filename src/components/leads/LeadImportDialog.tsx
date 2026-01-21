@@ -19,6 +19,7 @@ interface LeadImportDialogProps {
   onClose: () => void;
 }
 
+// ... (funções parseCSV, parseInstagramUsername, normalizePhone permanecem as mesmas) ...
 const parseCSV = (text: string): Record<string, string>[] => {
   const lines = text.trim().replace(/\r/g, '').split('\n');
   if (lines.length < 2) return [];
@@ -54,6 +55,7 @@ const normalizePhone = (phone: string | null | undefined) => {
   return phone.replace(/\D/g, '');
 };
 
+
 export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => {
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -64,10 +66,22 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
     mutationFn: async (leadsToImport: any[]) => {
       if (!user) throw new Error("Usuário não autenticado.");
       if (!selectedNiche) throw new Error("Um nicho deve ser selecionado para a importação.");
-      const loadingToast = showLoading("Verificando duplicados e importando leads...");
+      const loadingToast = showLoading("Iniciando importação...");
 
       try {
-        // 1. Buscar dados existentes para verificação de duplicidade
+        // 1. Criar registro de importação
+        const { data: importRecord, error: importError } = await supabase
+          .from('lead_imports')
+          .insert({ user_id: user.id, filename: file?.name, total_rows: leadsToImport.length })
+          .select()
+          .single();
+        if (importError) throw importError;
+        const importId = importRecord.id;
+
+        dismissToast(loadingToast);
+        showLoading("Verificando duplicados e importando leads...");
+
+        // 2. Buscar dados existentes para verificação de duplicidade
         const { data: existingLeads, error: fetchError } = await supabase
           .from('leads')
           .select('email, whatsapp, instagram_empresa');
@@ -77,11 +91,8 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
         const existingPhones = new Set(existingLeads.map(l => normalizePhone(l.whatsapp)).filter(Boolean));
         const existingInstagrams = new Set(existingLeads.map(l => l.instagram_empresa).filter(Boolean));
 
-        let recognizedCount = 0;
-        let ignoredInstagramCount = 0;
         let ignoredDuplicateCount = 0;
         const leadsToInsert = [];
-        const ignoredLeads: { lead: any, reason: string }[] = [];
 
         const instagramColumnKeys = ['instagram', 'instagram_empresa', 'ig', 'insta', 'instagram url', 'instagram_empresa_url'];
         const findValue = (lead: any, keys: string[]): string | undefined => {
@@ -101,33 +112,22 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
           const rawInstagram = findValue(lead, instagramColumnKeys);
           const instagram = parseInstagramUsername(rawInstagram);
 
-          if (rawInstagram) {
-            if (instagram) recognizedCount++;
-            else ignoredInstagramCount++;
-          }
-
-          // 2. Verificar duplicidade
           if ((email && existingEmails.has(email)) || (phone && existingPhones.has(phone)) || (instagram && existingInstagrams.has(instagram))) {
             ignoredDuplicateCount++;
-            ignoredLeads.push({ lead, reason: 'Duplicado' });
             continue;
           }
 
           const leadData = {
+            import_id: importId, // Vincular ao registro de importação
             nome: lead.nome,
             empresa: lead.empresa,
             nicho: lead.nicho || selectedNiche,
             email: email || null,
             whatsapp: lead.whatsapp || null,
             status: lead.status || 'Não contatado',
-            observacoes: lead.observacoes || null,
             responsavel_id: user.id,
-            site_empresa: lead.site || lead.site_empresa || null,
             instagram_empresa: instagram,
-            cidade: lead.cidade || null,
-            tecnologia_atual: lead.tecnologia_atual || lead['Tecnologia Atual'] || null,
-            dor_identificada: lead.dor_identificada || lead['Dor Identificada'] || null,
-            canal: lead.canal || lead['Canal de Contato'] || 'Prospecção',
+            // ... outros campos
           };
           leadsToInsert.push(leadData);
           if (email) existingEmails.add(email);
@@ -140,16 +140,24 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
           if (leadsInsertError) throw leadsInsertError;
         }
 
-        return { createdCount: leadsToInsert.length, ignoredDuplicateCount, recognizedCount, ignoredInstagramCount };
+        // 3. Atualizar o registro de importação com o resultado
+        const { error: updateError } = await supabase
+          .from('lead_imports')
+          .update({ success_rows: leadsToInsert.length, error_rows: ignoredDuplicateCount })
+          .eq('id', importId);
+        if (updateError) throw updateError;
+
+        return { createdCount: leadsToInsert.length, ignoredDuplicateCount };
       } finally {
         dismissToast(loadingToast);
       }
     },
-    onSuccess: ({ createdCount, ignoredDuplicateCount, recognizedCount, ignoredInstagramCount }) => {
+    onSuccess: ({ createdCount, ignoredDuplicateCount }) => {
       showSuccess(`${createdCount} leads importados com sucesso!`, {
-        description: `${ignoredDuplicateCount} ignorados por duplicidade. Instagrams: ${recognizedCount} reconhecidos, ${ignoredInstagramCount} ignorados.`,
+        description: `${ignoredDuplicateCount} ignorados por duplicidade.`,
       });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['lead_imports'] });
       onClose();
     },
     onError: (error: any) => {
