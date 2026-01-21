@@ -51,7 +51,6 @@ const LeadsPage = () => {
       const formattedData = fetchedData.map(lead => ({
         ...lead,
         responsavel: Array.isArray(lead.responsavel) ? lead.responsavel[0] : lead.responsavel,
-        nome_empresa: `${lead.nome} ${lead.empresa}`
       })) as Lead[];
       setLeads(formattedData);
       setError(null);
@@ -84,9 +83,6 @@ const LeadsPage = () => {
         setRowSelection({});
       },
       undoAction: async () => {
-        // Para desfazer, precisaríamos do status original de cada lead.
-        // Esta é uma ação mais complexa que não será implementada agora para manter a simplicidade.
-        // Em um cenário real, salvaríamos o estado anterior antes da mutação.
         showError("Ação de desfazer para alteração de status em massa não está implementada.");
         queryClient.invalidateQueries({ queryKey: ['leads'] });
       },
@@ -121,7 +117,7 @@ const LeadsPage = () => {
         setRowSelection({});
       },
       undoAction: async () => {
-        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, nome_empresa, ...rest }) => rest);
+        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, ...rest }) => rest);
         const { error } = await supabase.from('leads').insert(leadsToRestore);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['leads'] });
@@ -131,11 +127,10 @@ const LeadsPage = () => {
 
   const handleBulkExport = () => {
     const selectedData = selectedLeads.map(lead => {
-      const { responsavel, tags, ...rest } = lead;
+      const { responsavel, ...rest } = lead;
       return {
         ...rest,
         responsavel_nome: responsavel?.full_name || 'N/A',
-        tags: tags.map(t => t.nome).join(', '),
       };
     });
     exportToCsv(`leads_selecionados_${new Date().toISOString().split('T')[0]}.csv`, selectedData);
@@ -153,7 +148,7 @@ const LeadsPage = () => {
         queryClient.invalidateQueries({ queryKey: ['leads'] });
       },
       undoAction: async () => {
-        const { id: _, created_at, updated_at, responsavel, tags, nome_empresa, ...rest } = leadToDelete;
+        const { id: _, created_at, updated_at, responsavel, ...rest } = leadToDelete;
         const { error } = await supabase.from('leads').insert(rest);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['leads'] });

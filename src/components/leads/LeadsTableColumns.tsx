@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, ArrowUpDown, Briefcase } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, Briefcase, Link as LinkIcon, Instagram, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,30 +11,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useNavigate } from "react-router-dom"
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { getFollowUpStatus } from "@/lib/followupUtils"
-
-type Tag = {
-  id: string;
-  nome: string;
-  cor: string | null;
-}
 
 export type Lead = {
   id: string
   nome: string
   empresa: string
+  instagram_empresa: string | null
+  whatsapp: string | null
   nicho: string
-  responsavel_id: string
-  status: string
-  proximo_followup: string | null
-  created_at: string
+  site_empresa: string | null
   responsavel: { full_name: string } | null
-  tags: Tag[]
 }
 
 export const getColumns = (
@@ -73,64 +61,54 @@ export const getColumns = (
     header: "Empresa",
   },
   {
+    accessorKey: "instagram_empresa",
+    header: "Instagram",
+    cell: ({ row }) => {
+      const instagram = row.original.instagram_empresa;
+      if (!instagram) return "N/A";
+      const url = instagram.startsWith('@') ? `https://instagram.com/${instagram.substring(1)}` : instagram;
+      return <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><Instagram className="w-3 h-3" />{instagram}</a>
+    },
+    meta: {
+      className: "hidden md:table-cell",
+    },
+  },
+  {
+    accessorKey: "whatsapp",
+    header: "Telefone",
+    cell: ({ row }) => {
+      const phone = row.original.whatsapp;
+      if (!phone) return "N/A";
+      const cleanPhone = phone.replace(/\D/g, '');
+      return <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><Phone className="w-3 h-3" />{phone}</a>
+    },
+  },
+  {
     accessorKey: "nicho",
     header: "Nicho",
+    meta: {
+      className: "hidden lg:table-cell",
+    },
+  },
+  {
+    accessorKey: "site_empresa",
+    header: "Site",
+    cell: ({ row }) => {
+      const site = row.original.site_empresa;
+      if (!site) return "N/A";
+      return <a href={site} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><LinkIcon className="w-3 h-3" />Visitar</a>
+    },
+    meta: {
+      className: "hidden lg:table-cell",
+    },
   },
   {
     accessorKey: "responsavel",
     header: "Responsável",
-    cell: ({ row }) => {
-      const responsavel = row.original.responsavel;
-      return responsavel ? responsavel.full_name : "N/A";
-    },
+    cell: ({ row }) => row.original.responsavel?.full_name || "N/A",
     enableSorting: false,
-  },
-  {
-    accessorKey: "tags",
-    header: "Tags",
-    cell: ({ row }) => (
-      <div className="flex flex-wrap gap-1">
-        {row.original.tags?.map(tag => (
-          <Badge key={tag.id} variant="secondary" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
-            {tag.nome}
-          </Badge>
-        ))}
-      </div>
-    ),
-    filterFn: (row, columnId, filterValue: Set<string>) => {
-      if (!filterValue || filterValue.size === 0) return true;
-      const rowTags = row.original.tags;
-      if (!rowTags || rowTags.length === 0) return false;
-      return rowTags.some(tag => filterValue.has(tag.id));
-    },
-    enableSorting: false,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-  },
-  {
-    accessorKey: "proximo_followup",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Próximo Follow-up
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const date = row.getValue("proximo_followup")
-      const followUpStatus = getFollowUpStatus(date as string | null);
-      return (
-        <div className="flex items-center gap-2">
-          <span>{date ? format(new Date(date as string), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}</span>
-          {followUpStatus && <Badge variant={followUpStatus.variant} className={followUpStatus.className}>{followUpStatus.text}</Badge>}
-        </div>
-      )
+    meta: {
+      className: "hidden md:table-cell",
     },
   },
   {
@@ -167,11 +145,5 @@ export const getColumns = (
         </DropdownMenu>
       )
     },
-  },
-  {
-    accessorKey: "nome_empresa",
-    header: "Nome ou Empresa",
-    cell: () => null,
-    enableHiding: true,
   },
 ]
