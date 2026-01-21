@@ -11,12 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { Combobox } from '@/components/ui/combobox';
+import { NICHOS } from '@/lib/constants';
 
 const CompanyFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditMode = Boolean(id);
+
+  const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 
   const { data: companyData, isLoading: isLoadingCompany } = useQuery({
     queryKey: ['company', id],
@@ -82,14 +86,19 @@ const CompanyFormPage = () => {
             <FormField control={form.control} name="nome" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
-                <FormControl><Input placeholder="Nome da empresa" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+                <FormControl><Input placeholder="Nome da empresa" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="segmento" render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Segmento</FormLabel>
-                <FormControl><Input placeholder="Ex: Tecnologia, Varejo" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+                <Combobox
+                  options={nichoOptions}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  placeholder="Selecione um segmento"
+                />
                 <FormMessage />
               </FormItem>
             )} />
@@ -97,19 +106,19 @@ const CompanyFormPage = () => {
           <FormField control={form.control} name="site" render={({ field }) => (
             <FormItem>
               <FormLabel>Site</FormLabel>
-              <FormControl><Input placeholder="https://exemplo.com" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+              <FormControl><Input placeholder="https://exemplo.com" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
           <FormField control={form.control} name="observacoes" render={({ field }) => (
             <FormItem>
               <FormLabel>Observações</FormLabel>
-              <FormControl><Textarea placeholder="Observações sobre a empresa" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+              <FormControl><Textarea placeholder="Observações sobre a empresa" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
           <div className="flex justify-end">
-            <Button type="submit" disabled={mutation.isPending} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {isEditMode ? 'Salvar Alterações' : 'Criar Empresa'}
             </Button>
