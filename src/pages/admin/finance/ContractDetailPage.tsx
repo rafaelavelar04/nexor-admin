@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, ArrowLeft, DollarSign, Building, Calendar, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, DollarSign, Building, Calendar, FileText, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,9 @@ import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/formatters';
 import { ContractReceivablesTable } from '@/components/finance/ContractReceivablesTable';
 import { showSuccess, showError } from '@/utils/toast';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useSession } from '@/contexts/SessionContext';
 
 const statusStyles: Record<string, string> = {
   ativo: "bg-green-500/20 text-green-300 border-green-500/30",
@@ -23,6 +25,8 @@ const ContractDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { profile } = useSession();
+  const canManage = profile?.role === 'admin';
   const [updatingReceivableId, setUpdatingReceivableId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
@@ -37,6 +41,27 @@ const ContractDetailPage = () => {
     },
     enabled: !!id,
   });
+
+  const { data: costs, isLoading: isLoadingCosts } = useQuery({
+    queryKey: ['contractCosts', id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data, error } = await supabase
+        .from('partner_costs')
+        .select('*, partner:partners(nome)')
+        .eq('contract_id', id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { totalCosts, realMargin } = useMemo(() => {
+    if (!data || !costs) return { totalCosts: 0, realMargin: 0 };
+    const totalCosts = costs.reduce((sum, cost) => sum + (cost.valor || 0), 0);
+    const realMargin = (data.value || 0) - totalCosts;
+    return { totalCosts, realMargin };
+  }, [data, costs]);
 
   const receivableStatusMutation = useMutation({
     mutationFn: async ({ receivableId, isPaid }: { receivableId: string, isPaid: boolean }) => {
@@ -71,7 +96,7 @@ const ContractDetailPage = () => {
     },
   });
 
-  if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (isLoading || isLoadingCosts) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   if (isError || !data) return <div>Erro ao carregar contrato.</div>;
 
   return (
@@ -93,6 +118,32 @@ const ContractDetailPage = () => {
           <div className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-muted-foreground" /><span>{formatCurrency(data.value)} {data.billing_cycle ? `/${data.billing_cycle}` : ''}</span></div>
           <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /><span>Início: {format(new Date(data.start_date), 'dd/MM/yyyy', { locale: ptBR })}</span></div>
           <div className="flex items-center gap-2 col-span-1 md:col-span-3"><FileText className="w-4 h-4 text-muted-foreground" /><span>Pagamento: <span className="capitalize font-medium">{data.tipo_pagamento?.replace('_', ' ')}</span> {data.numero_parcelas ? `em ${data.numero_parcelas}x` : ''}</span></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Custos e Margem</CardTitle>
+          {canManage && <Button size="sm"><PlusCircle className="w-4 h-4 mr-2" />Adicionar Custo</Button>}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 mb-6 text-center">
+            <div><p className="text-sm text-muted-foreground">Receita Total</p><p className="text-xl font-bold">{formatCurrency(data.value)}</p></div>
+            <div><p className="text-sm text-muted-foreground">Custos Totais</p><p className="text-xl font-bold text-red-400">{formatCurrency(totalCosts)}</p></div>
+            <div><p className="text-sm text-muted-foreground">Margem Real</p><p className="text-xl font-bold text-green-400">{formatCurrency(realMargin)}</p></div>
+          </div>
+          <Table>
+            <TableHeader><TableRow><TableHead>Parceiro</TableHead><TableHead>Descrição</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {costs && costs.length > 0 ? costs.map(cost => (
+                <TableRow key={cost.id}>
+                  <TableCell>{cost.partner?.nome}</TableCell>
+                  <TableCell>{cost.descricao}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(cost.valor)}</TableCell>
+                </TableRow>
+              )) : <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Nenhum custo lançado.</TableCell></TableRow>}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
