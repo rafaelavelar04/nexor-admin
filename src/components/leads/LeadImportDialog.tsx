@@ -36,20 +36,22 @@ const parseInstagramUsername = (rawInput: any): string | null => {
   if (!rawInput || typeof rawInput !== 'string') {
     return null;
   }
-
   let username = rawInput.trim().toLowerCase();
   username = username.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//, '');
   if (username.startsWith('@')) {
     username = username.substring(1);
   }
   username = username.split('/')[0];
-
   const instagramRegex = /^[a-z0-9._]{1,30}$/;
   if (instagramRegex.test(username)) {
     return username;
   }
-
   return null;
+};
+
+const normalizePhone = (phone: string | null | undefined) => {
+  if (!phone) return null;
+  return phone.replace(/\D/g, '');
 };
 
 export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => {
@@ -62,116 +64,92 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
     mutationFn: async (leadsToImport: any[]) => {
       if (!user) throw new Error("Usuário não autenticado.");
       if (!selectedNiche) throw new Error("Um nicho deve ser selecionado para a importação.");
-      const loadingToast = showLoading("Importando leads... Isso pode levar um momento.");
+      const loadingToast = showLoading("Verificando duplicados e importando leads...");
 
       try {
-        let recognizedCount = 0;
-        let ignoredCount = 0;
-        const instagramColumnKeys = ['instagram', 'instagram_empresa', 'ig', 'insta', 'instagram url', 'instagram_empresa_url'];
+        // 1. Buscar dados existentes para verificação de duplicidade
+        const { data: existingLeads, error: fetchError } = await supabase
+          .from('leads')
+          .select('email, whatsapp, instagram_empresa');
+        if (fetchError) throw fetchError;
 
+        const existingEmails = new Set(existingLeads.map(l => l.email?.toLowerCase().trim()).filter(Boolean));
+        const existingPhones = new Set(existingLeads.map(l => normalizePhone(l.whatsapp)).filter(Boolean));
+        const existingInstagrams = new Set(existingLeads.map(l => l.instagram_empresa).filter(Boolean));
+
+        let recognizedCount = 0;
+        let ignoredInstagramCount = 0;
+        let ignoredDuplicateCount = 0;
+        const leadsToInsert = [];
+        const ignoredLeads: { lead: any, reason: string }[] = [];
+
+        const instagramColumnKeys = ['instagram', 'instagram_empresa', 'ig', 'insta', 'instagram url', 'instagram_empresa_url'];
         const findValue = (lead: any, keys: string[]): string | undefined => {
           const lowerCaseLead: Record<string, any> = {};
           for (const key in lead) {
             lowerCaseLead[key.toLowerCase().trim()] = lead[key];
           }
           for (const key of keys) {
-            if (lowerCaseLead[key]) {
-              return lowerCaseLead[key];
-            }
+            if (lowerCaseLead[key]) return lowerCaseLead[key];
           }
           return undefined;
         };
 
-        const { data: existingTags, error: tagsError } = await supabase.from('tags').select('id, nome');
-        if (tagsError) throw tagsError;
-        const tagMap = new Map(existingTags.map(t => [t.nome.toLowerCase(), t.id]));
-
-        const newTagNames = new Set<string>();
-        leadsToImport.forEach(lead => {
-          if (lead.tags) {
-            String(lead.tags).split(',').forEach((tagName: string) => {
-              const trimmed = tagName.trim();
-              if (trimmed && !tagMap.has(trimmed.toLowerCase())) {
-                newTagNames.add(trimmed);
-              }
-            });
-          }
-        });
-
-        if (newTagNames.size > 0) {
-          const { data: createdTags, error: createTagsError } = await supabase
-            .from('tags')
-            .insert(Array.from(newTagNames).map(name => ({ nome: name })))
-            .select('id, nome');
-          if (createTagsError) throw createTagsError;
-          createdTags.forEach(t => tagMap.set(t.nome.toLowerCase(), t.id));
-        }
-
-        const leadsData = leadsToImport.map(lead => {
+        for (const lead of leadsToImport) {
+          const email = lead.email?.toLowerCase().trim();
+          const phone = normalizePhone(lead.whatsapp);
           const rawInstagram = findValue(lead, instagramColumnKeys);
-          const parsedInstagram = parseInstagramUsername(rawInstagram);
+          const instagram = parseInstagramUsername(rawInstagram);
 
           if (rawInstagram) {
-            if (parsedInstagram) {
-              recognizedCount++;
-            } else {
-              ignoredCount++;
-            }
+            if (instagram) recognizedCount++;
+            else ignoredInstagramCount++;
           }
 
-          return {
+          // 2. Verificar duplicidade
+          if ((email && existingEmails.has(email)) || (phone && existingPhones.has(phone)) || (instagram && existingInstagrams.has(instagram))) {
+            ignoredDuplicateCount++;
+            ignoredLeads.push({ lead, reason: 'Duplicado' });
+            continue;
+          }
+
+          const leadData = {
             nome: lead.nome,
             empresa: lead.empresa,
             nicho: lead.nicho || selectedNiche,
-            email: lead.email || null,
+            email: email || null,
             whatsapp: lead.whatsapp || null,
             status: lead.status || 'Não contatado',
             observacoes: lead.observacoes || null,
             responsavel_id: user.id,
             site_empresa: lead.site || lead.site_empresa || null,
-            instagram_empresa: parsedInstagram,
+            instagram_empresa: instagram,
             cidade: lead.cidade || null,
             tecnologia_atual: lead.tecnologia_atual || lead['Tecnologia Atual'] || null,
             dor_identificada: lead.dor_identificada || lead['Dor Identificada'] || null,
             canal: lead.canal || lead['Canal de Contato'] || 'Prospecção',
           };
-        });
-
-        const { data: insertedLeads, error: leadsInsertError } = await supabase
-          .from('leads')
-          .insert(leadsData)
-          .select('id');
-        if (leadsInsertError) throw leadsInsertError;
-
-        const leadTagsRelations: { lead_id: string; tag_id: string }[] = [];
-        insertedLeads.forEach((insertedLead, index) => {
-          const sourceLead = leadsToImport[index];
-          if (sourceLead.tags) {
-            String(sourceLead.tags).split(',').forEach((tagName: string) => {
-              const tagId = tagMap.get(tagName.trim().toLowerCase());
-              if (tagId) {
-                leadTagsRelations.push({ lead_id: insertedLead.id, tag_id: tagId });
-              }
-            });
-          }
-        });
-
-        if (leadTagsRelations.length > 0) {
-          const { error: relationsError } = await supabase.from('lead_tags').insert(leadTagsRelations);
-          if (relationsError) throw relationsError;
+          leadsToInsert.push(leadData);
+          if (email) existingEmails.add(email);
+          if (phone) existingPhones.add(phone);
+          if (instagram) existingInstagrams.add(instagram);
         }
 
-        return { count: insertedLeads.length, recognizedCount, ignoredCount };
+        if (leadsToInsert.length > 0) {
+          const { error: leadsInsertError } = await supabase.from('leads').insert(leadsToInsert);
+          if (leadsInsertError) throw leadsInsertError;
+        }
+
+        return { createdCount: leadsToInsert.length, ignoredDuplicateCount, recognizedCount, ignoredInstagramCount };
       } finally {
         dismissToast(loadingToast);
       }
     },
-    onSuccess: ({ count, recognizedCount, ignoredCount }) => {
-      showSuccess(`${count} leads importados com sucesso!`, {
-        description: `Instagrams: ${recognizedCount} reconhecidos, ${ignoredCount} ignorados por formato inválido.`,
+    onSuccess: ({ createdCount, ignoredDuplicateCount, recognizedCount, ignoredInstagramCount }) => {
+      showSuccess(`${createdCount} leads importados com sucesso!`, {
+        description: `${ignoredDuplicateCount} ignorados por duplicidade. Instagrams: ${recognizedCount} reconhecidos, ${ignoredInstagramCount} ignorados.`,
       });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
       onClose();
     },
     onError: (error: any) => {

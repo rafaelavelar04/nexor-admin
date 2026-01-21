@@ -35,6 +35,11 @@ const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 interface UserProfile { id: string; full_name: string; }
 type Tag = { id: string; nome: string; cor: string | null; };
 
+const normalizePhone = (phone: string | null | undefined) => {
+  if (!phone) return null;
+  return phone.replace(/\D/g, '');
+};
+
 const LeadFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -116,6 +121,21 @@ const LeadFormPage = () => {
 
   const mutation = useMutation({
     mutationFn: async (formData: LeadFormData) => {
+      // Deduplication check
+      const email = formData.email?.toLowerCase().trim();
+      const phone = normalizePhone(formData.whatsapp);
+      const instagram = formData.instagram_empresa?.toLowerCase().trim();
+
+      let query = supabase.from('leads').select('id').or(`email.eq.${email},whatsapp.eq.${phone},instagram_empresa.eq.${instagram}`);
+      if (isEditMode) {
+        query = query.neq('id', id);
+      }
+      const { data: duplicates, error: duplicateError } = await query;
+      if (duplicateError) throw duplicateError;
+      if (duplicates && duplicates.length > 0) {
+        throw new Error("Já existe um lead com este email, telefone ou Instagram.");
+      }
+
       const { decisores, ...leadFields } = formData;
       
       const { data: leadResult, error: leadError } = isEditMode
