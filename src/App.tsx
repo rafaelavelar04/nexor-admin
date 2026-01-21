@@ -16,13 +16,13 @@ import LeadFormPage from "./pages/admin/leads/LeadFormPage";
 import Opportunities from "./pages/admin/Opportunities";
 import OpportunityDetailPage from "./pages/admin/opportunities/OpportunityDetailPage";
 import SettingsPage from "./pages/admin/Settings";
+import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
 import GoalsPage from "./pages/admin/GoalsPage";
 import CompaniesPage from "./pages/admin/CompaniesPage";
 import CompanyFormPage from "./pages/admin/companies/CompanyFormPage";
 import ActivitiesPage from "./pages/admin/ActivitiesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import InsightsPage from "./pages/admin/InsightsPage";
-import WebhookLogsPage from "./pages/admin/WebhookLogsPage";
 import ForecastPage from "./pages/admin/ForecastPage";
 import FinancePage from "./pages/admin/FinancePage";
 import ContractDetailPage from "./pages/admin/finance/ContractDetailPage";
@@ -31,6 +31,9 @@ import OnboardingDetailPage from "./pages/admin/onboarding/OnboardingDetailPage"
 import SupportPage from "./pages/admin/SupportPage";
 import TicketFormPage from "./pages/admin/support/TicketFormPage";
 import AlertsPage from "./pages/admin/AlertsPage";
+import PartnersPage from "./pages/admin/PartnersPage";
+import PartnerFormPage from "./pages/admin/partners/PartnerFormPage";
+import AssignmentsPage from "./pages/admin/AssignmentsPage";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +76,10 @@ const App = () => (
                   <Route path="suporte/novo" element={<TicketFormPage />} />
                   <Route path="suporte/:id" element={<TicketFormPage />} />
                   <Route path="alertas" element={<AlertsPage />} />
+                  <Route path="parceiros" element={<PartnersPage />} />
+                  <Route path="parceiros/novo" element={<PartnerFormPage />} />
+                  <Route path="parceiros/:id" element={<PartnerFormPage />} />
+                  <Route path="alocacoes" element={<AssignmentsPage />} />
                 </Route>
               </Route>
 
