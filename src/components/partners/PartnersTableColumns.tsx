@@ -4,19 +4,21 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "@/lib/formatters";
 
 export type Partner = {
   id: string;
   nome: string;
-  area: string | null;
-  status: 'ativo' | 'inativo';
+  tipo_servico: string | null;
+  modelo_pagamento: 'fixo' | 'por_contrato' | 'percentual' | null;
+  valor_padrao: number | null;
+  ativo: boolean;
   email: string | null;
-  whatsapp: string | null;
 };
 
-const statusStyles: Record<Partner['status'], string> = {
-  ativo: "bg-green-500/20 text-green-300 border-green-500/30",
-  inativo: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+const statusStyles = {
+  true: "bg-green-500/20 text-green-300 border-green-500/30",
+  false: "bg-gray-500/20 text-gray-300 border-gray-500/30",
 };
 
 export const getColumns = (
@@ -32,27 +34,28 @@ export const getColumns = (
     ),
   },
   {
-    accessorKey: "area",
-    header: "Área",
-    filterFn: (row, id, value) => value === row.getValue(id),
+    accessorKey: "tipo_servico",
+    header: "Tipo de Serviço",
   },
   {
-    accessorKey: "email",
-    header: "Email",
+    accessorKey: "modelo_pagamento",
+    header: "Modelo",
+    cell: ({ row }) => <span className="capitalize">{row.original.modelo_pagamento?.replace('_', ' ') || 'N/A'}</span>,
   },
   {
-    accessorKey: "whatsapp",
-    header: "WhatsApp",
+    accessorKey: "valor_padrao",
+    header: "Valor Padrão",
+    cell: ({ row }) => row.original.valor_padrao ? formatCurrency(row.original.valor_padrao) : 'N/A',
   },
   {
-    accessorKey: "status",
+    accessorKey: "ativo",
     header: "Status",
     cell: ({ row }) => (
-      <Badge className={`capitalize ${statusStyles[row.original.status]}`}>
-        {row.original.status}
+      <Badge className={`capitalize ${statusStyles[String(row.original.ativo) as keyof typeof statusStyles]}`}>
+        {row.original.ativo ? 'Ativo' : 'Inativo'}
       </Badge>
     ),
-    filterFn: (row, id, value) => value === row.getValue(id),
+    filterFn: (row, id, value) => String(row.getValue(id)) === String(value),
   },
   {
     id: "actions",

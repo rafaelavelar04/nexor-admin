@@ -12,15 +12,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 const partnerSchema = z.object({
   nome: z.string().min(3, "O nome é obrigatório."),
-  razao_social: z.string().optional(),
-  documento: z.string().optional(),
+  tipo_servico: z.string().min(3, "O tipo de serviço é obrigatório."),
+  modelo_pagamento: z.enum(['fixo', 'por_contrato', 'percentual']),
+  valor_padrao: z.number().optional().nullable(),
+  ativo: z.boolean(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  whatsapp: z.string().optional(),
-  area: z.string().optional(),
-  status: z.enum(['ativo', 'inativo']),
   observacoes: z.string().optional(),
 });
 
@@ -45,7 +46,7 @@ const PartnerFormPage = () => {
 
   const form = useForm<PartnerFormData>({
     resolver: zodResolver(partnerSchema),
-    defaultValues: { status: 'ativo' },
+    defaultValues: { ativo: true, modelo_pagamento: 'por_contrato' },
   });
 
   useEffect(() => {
@@ -86,25 +87,36 @@ const PartnerFormPage = () => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input placeholder="Nome do parceiro" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="razao_social" render={({ field }) => (<FormItem><FormLabel>Razão Social</FormLabel><FormControl><Input placeholder="Razão Social (se aplicável)" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="documento" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input placeholder="Documento" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="contato@parceiro.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="whatsapp" render={({ field }) => (<FormItem><FormLabel>WhatsApp</FormLabel><FormControl><Input placeholder="(00) 00000-0000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Área</FormLabel><FormControl><Input placeholder="Ex: Desenvolvimento, Design" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="tipo_servico" render={({ field }) => (<FormItem><FormLabel>Tipo de Serviço</FormLabel><FormControl><Input placeholder="Ex: Desenvolvimento, Design" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="modelo_pagamento" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Modelo de Pagamento</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="fixo">Fixo</SelectItem>
+                    <SelectItem value="por_contrato">Por Contrato</SelectItem>
+                    <SelectItem value="percentual">Percentual</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="valor_padrao" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor Padrão (Opcional)</FormLabel>
+                <FormControl><CurrencyInput value={field.value} onValueChange={field.onChange} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+             <FormField control={form.control} name="ativo" render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-8">
+                <div className="space-y-0.5"><FormLabel>Ativo</FormLabel></div>
+                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+              </FormItem>
+            )} />
           </div>
-          <FormField control={form.control} name="status" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
           <FormField control={form.control} name="observacoes" render={({ field }) => (<FormItem><FormLabel>Observações</FormLabel><FormControl><Textarea placeholder="Informações adicionais sobre o parceiro" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <div className="flex justify-end">
             <Button type="submit" disabled={mutation.isPending}>
