@@ -36,7 +36,7 @@ const LeadsPage = () => {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
