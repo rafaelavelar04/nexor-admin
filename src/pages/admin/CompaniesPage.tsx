@@ -1,19 +1,22 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getColumns, Company } from '@/components/companies/CompaniesTableColumns';
-import { LeadsDataTable } from '@/components/leads/LeadsDataTable'; // Reusing the data table component
+import { CompaniesDataTable } from '@/components/companies/CompaniesDataTable';
 import { Loader2, PlusCircle, Building } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
+import { RowSelectionState, ColumnFiltersState } from '@tanstack/react-table';
 
 const CompaniesPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { profile } = useSession();
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const { data: companies, isLoading, isError } = useQuery<Company[]>({
     queryKey: ['companies'],
@@ -67,7 +70,7 @@ const CompaniesPage = () => {
         />
       );
     }
-    return <LeadsDataTable columns={columns} data={companies} />;
+    return <CompaniesDataTable columns={columns} data={companies} />;
   };
 
   return (
