@@ -17,7 +17,6 @@ import { PwaUpdater } from "../common/PwaUpdater";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Dashboards", href: "/admin/dashboards", icon: AreaChart },
   { name: "Leads", href: "/admin/leads", icon: Users },
   { name: "Oportunidades", href: "/admin/opportunities", icon: Briefcase },
   { name: "Onboarding", href: "/admin/onboarding", icon: ClipboardCheck },

@@ -28,7 +28,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const Dashboard = () => {
+const GeneralDashboardTab = () => {
   const { user } = useSession();
 
   const [leadsChartConfig, setLeadsChartConfig] = useLocalStorage<ChartConfig>('dashboard-leads-chart-config', { type: 'bar' });
@@ -148,12 +148,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Visão geral do desempenho comercial.</p>
-      </div>
-
+    <div className="space-y-6 mt-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <KpiCard title="Leads Ativos" value={totalLeads} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
         <KpiCard title="Oportunidades Abertas" value={openOpportunities} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
@@ -207,4 +202,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default GeneralDashboardTab;
