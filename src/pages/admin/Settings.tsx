@@ -11,6 +11,7 @@ import AlertRulesSettings from "@/components/settings/AlertRulesSettings";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import PlaybookSettings from "@/components/settings/PlaybookSettings";
 import PipelineSettings from "@/components/settings/PipelineSettings";
+import CostCenterSettings from "@/components/settings/CostCenterSettings";
 import { ShieldAlert } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
@@ -38,6 +39,7 @@ const SettingsPage = () => {
             <TabsTrigger value="roles" disabled={!isAdmin}>Permissões</TabsTrigger>
             <TabsTrigger value="pipeline" disabled={!isAdmin}>Pipeline</TabsTrigger>
             <TabsTrigger value="playbooks" disabled={!isAdmin}>Playbooks</TabsTrigger>
+            <TabsTrigger value="cost_centers" disabled={!isAdmin}>Centros de Custo</TabsTrigger>
             <TabsTrigger value="sessions" disabled={!isAdmin}>Sessões</TabsTrigger>
             <TabsTrigger value="alerts" disabled={!isAdmin}>Alertas</TabsTrigger>
             <TabsTrigger value="system" disabled={!isAdmin}>Sistema</TabsTrigger>
@@ -68,6 +70,10 @@ const SettingsPage = () => {
 
         <TabsContent value="playbooks" className="mt-6">
           {isAdmin ? <PlaybookSettings /> : <AccessDenied />}
+        </TabsContent>
+
+        <TabsContent value="cost_centers" className="mt-6">
+          {isAdmin ? <CostCenterSettings /> : <AccessDenied />}
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-6">
