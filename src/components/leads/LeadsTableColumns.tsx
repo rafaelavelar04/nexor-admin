@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useNavigate } from "react-router-dom"
+import { format } from "date-fns"
 
 export type Lead = {
   id: string
@@ -23,6 +24,7 @@ export type Lead = {
   nicho: string
   site_empresa: string | null
   responsavel: { full_name: string } | null
+  created_at: string
 }
 
 export const getColumns = (
@@ -110,6 +112,18 @@ export const getColumns = (
     meta: {
       className: "hidden md:table-cell",
     },
+  },
+  {
+    accessorKey: "created_at",
+    header: "Criado em",
+    cell: ({ row }) => format(new Date(row.original.created_at), 'dd/MM/yyyy'),
+    filterFn: (row, id, value: { from?: Date, to?: Date }) => {
+        if (!value?.from) return true;
+        const date = new Date(row.getValue(id));
+        const from = value.from;
+        const to = value.to ? new Date(value.to.getTime() + 86400000) : new Date(from.getTime() + 86400000);
+        return date >= from && date < to;
+    }
   },
   {
     id: "actions",

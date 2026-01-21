@@ -6,8 +6,8 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload } from 'lucide-react';
-import { showError } from '@/utils/toast';
+import { Loader2, Users, Upload, Trash2 } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -17,6 +17,9 @@ import { RowSelectionState, ColumnFiltersState } from '@tanstack/react-table';
 import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
+import { DateRange } from 'react-day-picker';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -28,9 +31,11 @@ const LeadsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -169,7 +174,7 @@ const LeadsPage = () => {
     if (leads.length === 0 && columnFilters.length === 0) {
       return <EmptyState icon={<Users className="w-12 h-12" />} title="Nenhum lead encontrado" description="Adicione seu primeiro lead para visualizá-lo aqui." cta={canManage ? { text: "Novo Lead", onClick: () => navigate('/admin/leads/novo') } : undefined} />;
     }
-    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />;
+    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} columnFilters={columnFilters} setColumnFilters={setColumnFilters} dateRange={dateRange} setDateRange={setDateRange} />;
   };
 
   const statusOptions = ["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado"];
@@ -183,6 +188,20 @@ const LeadsPage = () => {
         </div>
         {canManage && (
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Ações em Massa</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => alert("Funcionalidade em desenvolvimento")}
+                  disabled={columnFilters.length === 0}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir Leads Filtrados
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={() => setIsImportModalOpen(true)} variant="outline"><Upload className="w-4 h-4 mr-2" />Importar</Button>
             <Button onClick={() => navigate('/admin/leads/novo')}><PlusCircle className="w-4 h-4 mr-2" />Novo Lead</Button>
           </div>
@@ -190,7 +209,7 @@ const LeadsPage = () => {
       </div>
       
       <div className="flex items-center justify-end">
-        <SavedFiltersManager pageKey="leads" currentFilters={columnFilters} onApplyFilter={setColumnFilters} onClearFilters={() => setColumnFilters([])} />
+        <SavedFiltersManager pageKey="leads" currentFilters={columnFilters} onApplyFilter={setColumnFilters} onClearFilters={() => { setColumnFilters([]); setDateRange(undefined); }} />
       </div>
 
       {renderContent()}
