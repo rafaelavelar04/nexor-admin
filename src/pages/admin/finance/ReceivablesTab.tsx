@@ -11,7 +11,7 @@ const ReceivablesTab = () => {
   const queryClient = useQueryClient();
 
   const { data: receivables, isLoading, isError } = useQuery<Receivable[]>({
-    queryKey: ['contract_receivables'],
+    queryKey: ['receivables'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_all_receivables');
       if (error) throw error;
@@ -23,12 +23,12 @@ const ReceivablesTab = () => {
     mutationFn: async ({ id, isPaid }: { id: string, isPaid: boolean }) => {
       const status = isPaid ? 'pago' : 'pendente';
       const paid_at = isPaid ? new Date().toISOString() : null;
-      const { error } = await supabase.from('contract_receivables').update({ status, paid_at }).eq('id', id);
+      const { error } = await supabase.from('receivables').update({ status, paid_at }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       showSuccess("Status do recebível atualizado!");
-      queryClient.invalidateQueries({ queryKey: ['contract_receivables'] });
+      queryClient.invalidateQueries({ queryKey: ['receivables'] });
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
   });

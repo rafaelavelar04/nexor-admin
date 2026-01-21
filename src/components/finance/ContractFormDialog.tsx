@@ -113,7 +113,9 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
       const contractId = contractResult.id;
 
-      const { error: deleteError } = await supabase.from('contract_receivables').delete().eq('contract_id', contractId);
+      // Regenerate receivables on every save for simplicity.
+      // In a future step, we can add logic to protect paid receivables.
+      const { error: deleteError } = await supabase.from('receivables').delete().eq('contract_id', contractId);
       if (deleteError) throw deleteError;
 
       const newReceivables: Omit<any, 'id' | 'created_at'>[] = [];
@@ -137,16 +139,18 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
           });
         }
       }
+      // Note: Recurring payment logic will generate receivables in a future step,
+      // for now it just saves the contract info.
 
       if (newReceivables.length > 0) {
-        const { error: insertError } = await supabase.from('contract_receivables').insert(newReceivables);
+        const { error: insertError } = await supabase.from('receivables').insert(newReceivables);
         if (insertError) throw insertError;
       }
     },
     onSuccess: () => {
       showSuccess(`Contrato ${isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['contract_receivables'] });
+      queryClient.invalidateQueries({ queryKey: ['receivables'] });
       onClose();
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
