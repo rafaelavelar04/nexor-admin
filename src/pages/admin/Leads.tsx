@@ -6,7 +6,7 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload, Trash2 } from 'lucide-react';
+import { Loader2, Users, Upload, Trash2, User, Tag } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
 import { DateRange } from 'react-day-picker';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const LeadsPage = () => {
@@ -190,7 +190,7 @@ const LeadsPage = () => {
   const isFiltered = columnFilters.length > 0 || dateRange;
 
   const handleConfirmDeleteFiltered = () => {
-    const leadsToDelete = filteredLeads.map(row => row.original as Lead);
+    const leadsToDelete = isFiltered ? filteredLeads.map(row => row.original as Lead) : leads;
     const leadIdsToDelete = leadsToDelete.map(l => l.id);
 
     performAction({
@@ -235,12 +235,22 @@ const LeadsPage = () => {
                 <Button variant="outline">Ações em Massa</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled>
+                  <User className="w-4 h-4 mr-2" />
+                  Atribuir Responsável em Massa
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>
+                  <Tag className="w-4 h-4 mr-2" />
+                  Adicionar Tags em Massa
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setIsDeleteFilteredAlertOpen(true)}
-                  disabled={!isFiltered}
+                  disabled={leads.length === 0}
+                  className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir Leads Filtrados
+                  Excluir Leads...
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -278,13 +288,18 @@ const LeadsPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão em Massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir permanentemente os <strong>{filteredLeads.length} leads</strong> que correspondem aos filtros aplicados? Esta ação não pode ser desfeita facilmente.
+              {isFiltered
+                ? `Tem certeza que deseja excluir permanentemente os ${filteredLeads.length} leads que correspondem aos filtros aplicados?`
+                : `Você está prestes a excluir TODOS os ${leads.length} leads do sistema. Tem certeza?`
+              }
+              <br />
+              <strong>Esta ação não pode ser desfeita facilmente.</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDeleteFiltered} className="bg-destructive hover:bg-destructive/90">
-              Sim, excluir {filteredLeads.length} leads
+              Sim, excluir {isFiltered ? filteredLeads.length : leads.length} leads
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
