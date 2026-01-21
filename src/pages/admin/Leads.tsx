@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
-import { RowSelectionState, ColumnFiltersState } from '@tanstack/react-table';
+import { RowSelectionState, ColumnFiltersState, useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, SortingState } from '@tanstack/react-table';
 import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
@@ -31,11 +31,12 @@ const LeadsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isDeleteFilteredAlertOpen, setIsDeleteFilteredAlertOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -168,13 +169,54 @@ const LeadsPage = () => {
 
   const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
 
+  const table = useReactTable({
+    data: leads,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
+    state: { sorting, columnFilters, rowSelection },
+  });
+
+  useEffect(() => {
+    table.getColumn("created_at")?.setFilterValue(dateRange);
+  }, [dateRange, table]);
+
+  const filteredLeads = table.getFilteredRowModel().rows;
+  const isFiltered = columnFilters.length > 0 || dateRange;
+
+  const handleConfirmDeleteFiltered = () => {
+    const leadsToDelete = filteredLeads.map(row => row.original as Lead);
+    const leadIdsToDelete = leadsToDelete.map(l => l.id);
+
+    performAction({
+      message: `${leadIdsToDelete.length} leads foram excluídos.`,
+      action: async () => {
+        const { error } = await supabase.from('leads').delete().in('id', leadIdsToDelete);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
+      undoAction: async () => {
+        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, ...rest }) => rest);
+        const { error } = await supabase.from('leads').insert(leadsToRestore);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
+    });
+    setIsDeleteFilteredAlertOpen(false);
+  };
+
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (error) return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error}</div>;
-    if (leads.length === 0 && columnFilters.length === 0) {
+    if (leads.length === 0 && !isFiltered) {
       return <EmptyState icon={<Users className="w-12 h-12" />} title="Nenhum lead encontrado" description="Adicione seu primeiro lead para visualizá-lo aqui." cta={canManage ? { text: "Novo Lead", onClick: () => navigate('/admin/leads/novo') } : undefined} />;
     }
-    return <LeadsDataTable columns={columns} data={leads} rowSelection={rowSelection} setRowSelection={setRowSelection} columnFilters={columnFilters} setColumnFilters={setColumnFilters} dateRange={dateRange} setDateRange={setDateRange} />;
+    return <LeadsDataTable table={table} />;
   };
 
   const statusOptions = ["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado"];
@@ -194,8 +236,8 @@ const LeadsPage = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => alert("Funcionalidade em desenvolvimento")}
-                  disabled={columnFilters.length === 0}
+                  onClick={() => setIsDeleteFilteredAlertOpen(true)}
+                  disabled={!isFiltered}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Excluir Leads Filtrados
@@ -230,6 +272,23 @@ const LeadsPage = () => {
 
       <ConvertLeadModal isOpen={isConvertModalOpen} onClose={() => { setIsConvertModalOpen(false); setSelectedLead(null); }} leadId={selectedLead?.id || null} leadName={selectedLead?.nome || null} />
       <LeadImportDialog isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
+
+      <AlertDialog open={isDeleteFilteredAlertOpen} onOpenChange={setIsDeleteFilteredAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão em Massa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir permanentemente os <strong>{filteredLeads.length} leads</strong> que correspondem aos filtros aplicados? Esta ação não pode ser desfeita facilmente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteFiltered} className="bg-destructive hover:bg-destructive/90">
+              Sim, excluir {filteredLeads.length} leads
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

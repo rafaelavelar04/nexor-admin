@@ -1,15 +1,8 @@
 import * as React from "react"
 import {
   ColumnDef,
-  ColumnFiltersState,
-  SortingState,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  RowSelectionState,
+  Table as TableType,
 } from "@tanstack/react-table"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -25,44 +18,15 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  rowSelection: RowSelectionState
-  setRowSelection: React.Dispatch<React.SetStateAction<RowSelectionState>>
-  columnFilters: ColumnFiltersState
-  setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>
-  dateRange: DateRange | undefined
-  setDateRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>
+  table: TableType<TData>
 }
 
 export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, TValue>({
-  columns,
-  data,
-  rowSelection,
-  setRowSelection,
-  columnFilters,
-  setColumnFilters,
-  dateRange,
-  setDateRange,
+  table,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      rowSelection,
-    },
-  })
+  
+  const dateRange = table.getColumn("created_at")?.getFilterValue() as DateRange | undefined;
+  const setDateRange = (value: DateRange | undefined) => table.getColumn("created_at")?.setFilterValue(value);
 
   return (
     <div>
@@ -156,8 +120,8 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum lead encontrado.
+                <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
+                  Nenhum lead encontrado para os filtros aplicados.
                 </TableCell>
               </TableRow>
             )}
