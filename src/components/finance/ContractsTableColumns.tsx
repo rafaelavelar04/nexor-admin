@@ -22,6 +22,9 @@ export type Contract = {
   numero_parcelas: number | null;
   company: { nome: string } | null;
   opportunity: { titulo: string } | null;
+  financial_status: 'previsto' | 'aprovado' | 'pago' | 'atrasado' | 'cancelado';
+  due_date: string | null;
+  paid_at: string | null;
 };
 
 const statusStyles: Record<Contract['status'], string> = {
@@ -29,6 +32,14 @@ const statusStyles: Record<Contract['status'], string> = {
   pausado: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   cancelado: "bg-red-500/20 text-red-300 border-red-500/30",
   finalizado: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+};
+
+const financialStatusStyles: Record<Contract['financial_status'], string> = {
+  previsto: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  aprovado: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  pago: "bg-green-500/20 text-green-300 border-green-500/30",
+  atrasado: "bg-red-500/20 text-red-300 border-red-500/30",
+  cancelado: "bg-zinc-700/50 text-zinc-400 border-zinc-700",
 };
 
 export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Contract>[] => [
@@ -42,6 +53,16 @@ export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Cont
           {row.original.status}
         </Badge>
       </div>
+    ),
+    filterFn: (row, id, value) => value === row.getValue(id),
+  },
+  {
+    accessorKey: "financial_status",
+    header: "Status Financeiro",
+    cell: ({ row }) => (
+      <Badge className={`capitalize ${financialStatusStyles[row.original.financial_status]}`}>
+        {row.original.financial_status.replace('_', ' ')}
+      </Badge>
     ),
     filterFn: (row, id, value) => value === row.getValue(id),
   },
@@ -73,6 +94,11 @@ export const getColumns = (onEdit: (contract: Contract) => void): ColumnDef<Cont
     accessorKey: "start_date",
     header: "Início",
     cell: ({ row }) => format(new Date(row.original.start_date), "dd/MM/yyyy", { locale: ptBR }),
+  },
+  {
+    accessorKey: "due_date",
+    header: "Vencimento",
+    cell: ({ row }) => row.original.due_date ? format(new Date(row.original.due_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
   },
   {
     id: "actions",

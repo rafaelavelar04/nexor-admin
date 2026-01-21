@@ -27,6 +27,7 @@ export function ContractsDataTable<TData, TValue>({ columns, data }: DataTablePr
   });
 
   const statuses = ['ativo', 'pausado', 'cancelado', 'finalizado'];
+  const financialStatuses = ['previsto', 'aprovado', 'pago', 'atrasado', 'cancelado'];
 
   return (
     <div>
@@ -42,6 +43,13 @@ export function ContractsDataTable<TData, TValue>({ columns, data }: DataTablePr
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
             {statuses.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={(table.getColumn("financial_status")?.getFilterValue() as string) ?? "all"} onValueChange={(value) => table.getColumn("financial_status")?.setFilterValue(value === "all" ? undefined : value)}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status Financeiro" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {financialStatuses.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
