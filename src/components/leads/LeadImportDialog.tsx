@@ -32,6 +32,26 @@ const parseCSV = (text: string): Record<string, string>[] => {
   });
 };
 
+const parseInstagramUsername = (rawInput: any): string | null => {
+  if (!rawInput || typeof rawInput !== 'string') {
+    return null;
+  }
+
+  let username = rawInput.trim().toLowerCase();
+  username = username.replace(/^(https?:\/\/)?(www\.)?instagram\.com\//, '');
+  if (username.startsWith('@')) {
+    username = username.substring(1);
+  }
+  username = username.split('/')[0];
+
+  const instagramRegex = /^[a-z0-9._]{1,30}$/;
+  if (instagramRegex.test(username)) {
+    return username;
+  }
+
+  return null;
+};
+
 export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => {
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -45,6 +65,23 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
       const loadingToast = showLoading("Importando leads... Isso pode levar um momento.");
 
       try {
+        let recognizedCount = 0;
+        let ignoredCount = 0;
+        const instagramColumnKeys = ['instagram', 'instagram_empresa', 'ig', 'insta', 'instagram url', 'instagram_empresa_url'];
+
+        const findValue = (lead: any, keys: string[]): string | undefined => {
+          const lowerCaseLead: Record<string, any> = {};
+          for (const key in lead) {
+            lowerCaseLead[key.toLowerCase().trim()] = lead[key];
+          }
+          for (const key of keys) {
+            if (lowerCaseLead[key]) {
+              return lowerCaseLead[key];
+            }
+          }
+          return undefined;
+        };
+
         const { data: existingTags, error: tagsError } = await supabase.from('tags').select('id, nome');
         if (tagsError) throw tagsError;
         const tagMap = new Map(existingTags.map(t => [t.nome.toLowerCase(), t.id]));
@@ -70,21 +107,35 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
           createdTags.forEach(t => tagMap.set(t.nome.toLowerCase(), t.id));
         }
 
-        const leadsData = leadsToImport.map(lead => ({
-          nome: lead.nome,
-          empresa: lead.empresa,
-          nicho: lead.nicho || selectedNiche,
-          email: lead.email || null,
-          whatsapp: lead.whatsapp || null,
-          status: lead.status || 'Não contatado',
-          observacoes: lead.observacoes || null,
-          responsavel_id: user.id,
-          site_empresa: lead.site || lead.site_empresa || null,
-          cidade: lead.cidade || null,
-          tecnologia_atual: lead.tecnologia_atual || lead['Tecnologia Atual'] || null,
-          dor_identificada: lead.dor_identificada || lead['Dor Identificada'] || null,
-          canal: lead.canal || lead['Canal de Contato'] || 'Prospecção',
-        }));
+        const leadsData = leadsToImport.map(lead => {
+          const rawInstagram = findValue(lead, instagramColumnKeys);
+          const parsedInstagram = parseInstagramUsername(rawInstagram);
+
+          if (rawInstagram) {
+            if (parsedInstagram) {
+              recognizedCount++;
+            } else {
+              ignoredCount++;
+            }
+          }
+
+          return {
+            nome: lead.nome,
+            empresa: lead.empresa,
+            nicho: lead.nicho || selectedNiche,
+            email: lead.email || null,
+            whatsapp: lead.whatsapp || null,
+            status: lead.status || 'Não contatado',
+            observacoes: lead.observacoes || null,
+            responsavel_id: user.id,
+            site_empresa: lead.site || lead.site_empresa || null,
+            instagram_empresa: parsedInstagram,
+            cidade: lead.cidade || null,
+            tecnologia_atual: lead.tecnologia_atual || lead['Tecnologia Atual'] || null,
+            dor_identificada: lead.dor_identificada || lead['Dor Identificada'] || null,
+            canal: lead.canal || lead['Canal de Contato'] || 'Prospecção',
+          };
+        });
 
         const { data: insertedLeads, error: leadsInsertError } = await supabase
           .from('leads')
@@ -110,13 +161,15 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
           if (relationsError) throw relationsError;
         }
 
-        return { count: insertedLeads.length };
+        return { count: insertedLeads.length, recognizedCount, ignoredCount };
       } finally {
         dismissToast(loadingToast);
       }
     },
-    onSuccess: ({ count }) => {
-      showSuccess(`${count} leads importados com sucesso!`);
+    onSuccess: ({ count, recognizedCount, ignoredCount }) => {
+      showSuccess(`${count} leads importados com sucesso!`, {
+        description: `Instagrams: ${recognizedCount} reconhecidos, ${ignoredCount} ignorados por formato inválido.`,
+      });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       onClose();
@@ -165,8 +218,9 @@ export const LeadImportDialog = ({ isOpen, onClose }: LeadImportDialogProps) => 
 
         const requiredColumns = ['nome', 'empresa'];
         const firstRow = parsedData[0];
+        const lowerCaseHeaders = Object.keys(firstRow).map(h => h.toLowerCase());
         for (const col of requiredColumns) {
-            if (!(col in firstRow)) {
+            if (!lowerCaseHeaders.includes(col)) {
                 throw new Error(`Coluna obrigatória '${col}' não encontrada no arquivo.`);
             }
         }
