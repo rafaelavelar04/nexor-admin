@@ -11,13 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { Combobox } from '@/components/ui/combobox';
-import { NICHOS } from '@/lib/constants';
-
-const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 
 const CompanyFormPage = () => {
-  const { id } useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditMode = Boolean(id);
@@ -90,23 +86,13 @@ const CompanyFormPage = () => {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField
-              control={form.control}
-              name="segmento"
-              render={({ field }) => (
-                <FormItem className="flex flex-col pt-2">
-                  <FormLabel className="mb-1">Segmento</FormLabel>
-                  <Combobox
-                    options={nichoOptions}
-                    value={field.value || ''}
-                    onChange={field.onChange}
-                    placeholder="Selecione um segmento"
-                    className="bg-gray-800 border-gray-700"
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="segmento" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Segmento</FormLabel>
+                <FormControl><Input placeholder="Ex: Tecnologia, Varejo" {...field} className="bg-gray-800 border-gray-700" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
           </div>
           <FormField control={form.control} name="site" render={({ field }) => (
             <FormItem>
