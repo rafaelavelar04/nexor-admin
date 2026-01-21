@@ -123,7 +123,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
 
       const contractId = contractResult.id;
 
-      const { error: deleteError } = await supabase.from('receivables').delete().eq('contract_id', contractId);
+      const { error: deleteError } = await supabase.from('contract_receivables').delete().eq('contract_id', contractId);
       if (deleteError) throw deleteError;
 
       const newReceivables: Omit<any, 'id' | 'created_at'>[] = [];
@@ -150,7 +150,7 @@ export const ContractFormDialog = ({ isOpen, onClose, contract }: ContractFormDi
       }
 
       if (newReceivables.length > 0) {
-        const { error: insertError } = await supabase.from('receivables').insert(newReceivables);
+        const { error: insertError } = await supabase.from('contract_receivables').insert(newReceivables);
         if (insertError) throw insertError;
       }
     },
