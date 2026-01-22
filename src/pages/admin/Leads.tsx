@@ -158,20 +158,28 @@ const LeadsPage = () => {
     table.getColumn("created_at")?.setFilterValue(dateRange);
   }, [dateRange, table]);
 
-  const handleConfirmBulkDelete = async (criteria: any, count: number) => {
-    const { error } = await supabase.rpc('delete_leads_in_bulk', {
-      start_date: criteria.start_date ? format(criteria.start_date, 'yyyy-MM-dd') : null,
-      end_date: criteria.end_date ? format(criteria.end_date, 'yyyy-MM-dd') : null,
-      nicho_filter: criteria.nicho_filter || null,
-      responsavel_id_filter: criteria.responsavel_id_filter || null,
+  const handleConfirmBulkDelete = (criteria: any, count: number) => {
+    performAction({
+      message: `${count} leads foram excluídos.`,
+      action: async () => {
+        const { data: deletedLeads, error } = await supabase.rpc('delete_leads_in_bulk', {
+          start_date: criteria.start_date ? format(criteria.start_date, 'yyyy-MM-dd') : null,
+          end_date: criteria.end_date ? format(criteria.end_date, 'yyyy-MM-dd') : null,
+          nicho_filter: criteria.nicho_filter || null,
+          responsavel_id_filter: criteria.responsavel_id_filter || null,
+        });
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+        return deletedLeads;
+      },
+      undoAction: async (deletedLeads: any[]) => {
+        if (!deletedLeads || deletedLeads.length === 0) return;
+        const leadsToRestore = deletedLeads.map(({ created_at, updated_at, ...rest }) => rest);
+        const { error } = await supabase.from('leads').insert(leadsToRestore);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
     });
-
-    if (error) {
-      showError(`Erro ao excluir leads: ${error.message}`);
-    } else {
-      showSuccess(`${count} leads foram excluídos com sucesso.`);
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-    }
     setIsBulkDeleteModalOpen(false);
   };
 
