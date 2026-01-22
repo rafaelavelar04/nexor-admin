@@ -6,35 +6,55 @@ import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { showSuccess, showError } from '@/utils/toast';
-// import { getColumns, Assignment } from '@/components/assignments/AssignmentsTableColumns';
-// import { AssignmentsDataTable } from '@/components/assignments/AssignmentsDataTable';
-// import { AssignmentFormDialog } from '@/components/assignments/AssignmentFormDialog';
+import { getColumns, Assignment } from '@/components/assignments/AssignmentsTableColumns';
+import { AssignmentsDataTable } from '@/components/assignments/AssignmentsDataTable';
+import { AssignmentFormDialog } from '@/components/assignments/AssignmentFormDialog';
 
 const AssignmentsPage = () => {
+  const queryClient = useQueryClient();
   const { profile } = useSession();
   const canManage = profile?.role === 'admin';
   const [isFormOpen, setIsFormOpen] = useState(false);
-  // const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
 
-  const { data: assignments, isLoading, isError } = useQuery({
+  const { data: assignments, isLoading, isError } = useQuery<Assignment[]>({
     queryKey: ['assignments'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('partner_assignments').select('*, partner:partners(nome), contract:contracts(id), company:companies(nome)');
+      const { data, error } = await supabase.from('partner_assignments').select('*, partner:partners(nome), company:companies(nome), responsavel:profiles(full_name)');
       if (error) throw error;
-      return data || [];
+      return data.map(a => ({
+        ...a,
+        partner: Array.isArray(a.partner) ? a.partner[0] : a.partner,
+        company: Array.isArray(a.company) ? a.company[0] : a.company,
+        responsavel: Array.isArray(a.responsavel) ? a.responsavel[0] : a.responsavel,
+      })) as Assignment[] || [];
     },
   });
 
-  const handleEdit = (assignment: any) => {
-    // setSelectedAssignment(assignment);
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('partner_assignments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Alocação excluída com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    },
+    onError: (error: any) => showError(`Erro ao excluir: ${error.message}`),
+  });
+
+  const handleEdit = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
     setIsFormOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    alert(`Delete functionality for ${id} is in development.`);
+    if (window.confirm("Tem certeza que deseja excluir esta alocação?")) {
+      deleteMutation.mutate(id);
+    }
   };
 
-  // const columns = useMemo(() => getColumns(handleEdit, handleDelete, canManage), [canManage]);
+  const columns = useMemo(() => getColumns(handleEdit, handleDelete, canManage), [canManage]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -53,8 +73,7 @@ const AssignmentsPage = () => {
         />
       );
     }
-    // Placeholder until table is created
-    return <div className="rounded-md border p-4">Funcionalidade de tabela em desenvolvimento.</div>;
+    return <AssignmentsDataTable columns={columns} data={assignments} />;
   };
 
   return (
@@ -65,18 +84,18 @@ const AssignmentsPage = () => {
           <p className="text-muted-foreground mt-1">Gerencie os parceiros alocados em cada projeto e contrato.</p>
         </div>
         {canManage && (
-          <Button onClick={() => { /*setSelectedAssignment(null);*/ setIsFormOpen(true); }}>
+          <Button onClick={() => { setSelectedAssignment(null); setIsFormOpen(true); }}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Nova Alocação
           </Button>
         )}
       </div>
       {renderContent()}
-      {/* <AssignmentFormDialog 
+      <AssignmentFormDialog 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
         assignment={selectedAssignment}
-      /> */}
+      />
     </div>
   );
 };
