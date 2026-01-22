@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
-import { Loader2, Users, Briefcase, Percent, DollarSign } from 'lucide-react';
+import { Loader2, Users, Briefcase, Percent, DollarSign, AlertTriangle } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ReportCard } from '@/components/reports/ReportCard';
 import { formatCurrency, formatNumber } from '@/lib/formatters';
@@ -16,18 +16,22 @@ interface CommercialDashboardProps {
 }
 
 const CommercialDashboard = ({ dateRange }: CommercialDashboardProps) => {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['commercialDashboardData', dateRange],
     queryFn: async () => {
       if (!dateRange?.from || !dateRange?.to) return null;
-      const { data, error } = await supabase.rpc('get_dashboards_data', {
+      const { data, error: rpcError } = await supabase.rpc('get_dashboards_data', {
         start_date: format(dateRange.from, 'yyyy-MM-dd'),
         end_date: format(dateRange.to, 'yyyy-MM-dd'),
       });
-      if (error) throw error;
+      if (rpcError) {
+        console.error("Erro na query do Dashboard Comercial:", rpcError);
+        throw new Error(rpcError.message);
+      }
       return data.commercial;
     },
     enabled: !!dateRange?.from && !!dateRange?.to,
+    retry: false,
   });
 
   if (isLoading) {
@@ -35,10 +39,19 @@ const CommercialDashboard = ({ dateRange }: CommercialDashboardProps) => {
   }
 
   if (isError) {
-    return <div className="text-destructive mt-6 p-4 border border-destructive/50 bg-destructive/10 rounded-md">Erro ao carregar dados comerciais. Tente atualizar o período.</div>;
+    return (
+      <div className="mt-6 p-6 border border-destructive/50 bg-destructive/10 rounded-lg text-center">
+        <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Não foi possível carregar os dados</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ocorreu um erro ao buscar as informações comerciais. Isso pode ser devido a um problema de permissão ou uma falha temporária.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground/50">Detalhe: {error.message}</p>
+      </div>
+    );
   }
 
-  if (!data) {
+  if (!data || Object.keys(data).length === 0 || !data.funnel_chart) {
     return (
       <div className="mt-6">
         <EmptyState icon={<Briefcase className="w-12 h-12" />} title="Sem dados comerciais" description="Não há dados comerciais para exibir no período selecionado." />
@@ -67,7 +80,7 @@ const CommercialDashboard = ({ dateRange }: CommercialDashboardProps) => {
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" stroke="#888888" fontSize={12} width={100} />
               <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: '#fff' }} />
+              <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: 'hsl(var(--foreground))' }} />
             </BarChart>
           </ResponsiveContainer>
         </ReportCard>

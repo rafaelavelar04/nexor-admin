@@ -15,18 +15,22 @@ interface OperationalDashboardProps {
 }
 
 const OperationalDashboard = ({ dateRange }: OperationalDashboardProps) => {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['operationalDashboardData', dateRange],
     queryFn: async () => {
       if (!dateRange?.from || !dateRange?.to) return null;
-      const { data, error } = await supabase.rpc('get_dashboards_data', {
+      const { data, error: rpcError } = await supabase.rpc('get_dashboards_data', {
         start_date: format(dateRange.from, 'yyyy-MM-dd'),
         end_date: format(dateRange.to, 'yyyy-MM-dd'),
       });
-      if (error) throw error;
+      if (rpcError) {
+        console.error("Erro na query do Dashboard Operacional:", rpcError);
+        throw new Error(rpcError.message);
+      }
       return data.operational;
     },
     enabled: !!dateRange?.from && !!dateRange?.to,
+    retry: false,
   });
 
   if (isLoading) {
@@ -34,10 +38,19 @@ const OperationalDashboard = ({ dateRange }: OperationalDashboardProps) => {
   }
 
   if (isError) {
-    return <div className="text-destructive mt-6 p-4 border border-destructive/50 bg-destructive/10 rounded-md">Erro ao carregar dados operacionais. Tente atualizar o período.</div>;
+    return (
+      <div className="mt-6 p-6 border border-destructive/50 bg-destructive/10 rounded-lg text-center">
+        <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Não foi possível carregar os dados</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ocorreu um erro ao buscar as informações operacionais. Isso pode ser devido a um problema de permissão ou uma falha temporária.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground/50">Detalhe: {error.message}</p>
+      </div>
+    );
   }
 
-  if (!data) {
+  if (!data || Object.keys(data).length === 0) {
     return (
       <div className="mt-6">
         <EmptyState icon={<FileText className="w-12 h-12" />} title="Sem dados operacionais" description="Não há dados operacionais para exibir no período selecionado." />
