@@ -29,14 +29,9 @@ export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users }: BulkDele
   const [leadCount, setLeadCount] = useState<number | null>(null);
   const [isCounting, setIsCounting] = useState(false);
 
-  const criteria = {
-    start_date: dateRange?.from,
-    end_date: dateRange?.to,
-    nicho_filter: nicho,
-    responsavel_id_filter: responsavelId,
-  };
-
-  const debouncedCriteria = useDebounce(criteria, 500);
+  const debouncedDateRange = useDebounce(dateRange, 500);
+  const debouncedNicho = useDebounce(nicho, 500);
+  const debouncedResponsavelId = useDebounce(responsavelId, 500);
 
   useEffect(() => {
     if (!isOpen) {
@@ -47,10 +42,10 @@ export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users }: BulkDele
     const countLeads = async () => {
       setIsCounting(true);
       const { data, error } = await supabase.rpc('count_leads_for_deletion', {
-        start_date: debouncedCriteria.start_date ? format(debouncedCriteria.start_date, 'yyyy-MM-dd') : null,
-        end_date: debouncedCriteria.end_date ? format(debouncedCriteria.end_date, 'yyyy-MM-dd') : null,
-        nicho_filter: debouncedCriteria.nicho_filter || null,
-        responsavel_id_filter: debouncedCriteria.responsavel_id_filter || null,
+        start_date: debouncedDateRange?.from ? format(debouncedDateRange.from, 'yyyy-MM-dd') : null,
+        end_date: debouncedDateRange?.to ? format(debouncedDateRange.to, 'yyyy-MM-dd') : null,
+        nicho_filter: debouncedNicho || null,
+        responsavel_id_filter: debouncedResponsavelId || null,
       });
       
       if (error) {
@@ -63,11 +58,17 @@ export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users }: BulkDele
     };
 
     countLeads();
-  }, [isOpen, debouncedCriteria]);
+  }, [isOpen, debouncedDateRange, debouncedNicho, debouncedResponsavelId]);
 
   const handleConfirm = () => {
     if (leadCount !== null && leadCount > 0) {
-      onConfirm(debouncedCriteria, leadCount);
+      const criteria = {
+        start_date: debouncedDateRange?.from,
+        end_date: debouncedDateRange?.to,
+        nicho_filter: debouncedNicho,
+        responsavel_id_filter: debouncedResponsavelId,
+      };
+      onConfirm(criteria, leadCount);
     }
   };
 
