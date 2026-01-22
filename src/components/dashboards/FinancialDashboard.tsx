@@ -19,8 +19,8 @@ const FinancialDashboard = ({ dateRange }: FinancialDashboardProps) => {
     queryFn: async () => {
       if (!dateRange?.from || !dateRange?.to) return null;
       const { data, error: rpcError } = await supabase.rpc('get_dashboards_data', {
-        start_date: format(dateRange.from, 'yyyy-MM-dd'),
-        end_date: format(dateRange.to, 'yyyy-MM-dd'),
+        p_start_date: format(dateRange.from, 'yyyy-MM-dd'),
+        p_end_date: format(dateRange.to, 'yyyy-MM-dd'),
       });
       if (rpcError) {
         console.error("Erro na query do Dashboard Financeiro:", rpcError);

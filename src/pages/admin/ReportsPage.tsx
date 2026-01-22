@@ -32,8 +32,8 @@ const ReportsPage = () => {
       }
 
       const { data, error } = await supabase.rpc('get_reports_data', {
-        start_date: format(from, 'yyyy-MM-dd'),
-        end_date: format(to, 'yyyy-MM-dd'),
+        p_start_date: format(from, 'yyyy-MM-dd'),
+        p_end_date: format(to, 'yyyy-MM-dd'),
       });
 
       if (error) throw error;
