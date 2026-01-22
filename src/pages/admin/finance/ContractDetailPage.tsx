@@ -34,7 +34,6 @@ const ContractDetailPage = () => {
   const queryClient = useQueryClient();
   const { profile } = useSession();
   const canManage = profile?.role === 'admin';
-  const [updatingReceivableId, setUpdatingReceivableId] = useState<string | null>(null);
   const [isCostFormOpen, setIsCostFormOpen] = useState(false);
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
 
@@ -80,20 +79,6 @@ const ContractDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ['receivables'] });
     },
     onError: (error: any) => showError(`Erro: ${error.message}`),
-  });
-
-  const updateDueDateMutation = useMutation({
-    mutationFn: async ({ receivableId, newDate }: { receivableId: string, newDate: Date }) => {
-      const { error } = await supabase.from('contract_receivables').update({ due_date: newDate.toISOString().split('T')[0] }).eq('id', receivableId);
-      if (error) throw error;
-    },
-    onMutate: ({ receivableId }) => setUpdatingReceivableId(receivableId),
-    onSuccess: () => {
-      showSuccess("Data de vencimento atualizada!");
-      queryClient.invalidateQueries({ queryKey: ['contractDetail', id] });
-    },
-    onError: (error: any) => showError(`Erro ao atualizar data: ${error.message}`),
-    onSettled: () => setUpdatingReceivableId(null),
   });
 
   const deleteCostMutation = useMutation({
@@ -177,8 +162,6 @@ const ContractDetailPage = () => {
               receivables={data.receivables || []} 
               onMarkAsPaid={(receivableId, isPaid) => receivableStatusMutation.mutate({ receivableId, isPaid })}
               isUpdatingStatus={receivableStatusMutation.isPending}
-              onUpdateDueDate={(receivableId, newDate) => updateDueDateMutation.mutate({ receivableId, newDate })}
-              updatingReceivableId={updatingReceivableId}
             />
           </CardContent>
         </Card>

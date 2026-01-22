@@ -203,28 +203,36 @@ const LeadsPage = () => {
   const handleConfirmBulkAction = (value: any) => {
     let updateData: Record<string, any> = {};
     let successMessage = '';
+    let backupField: keyof Lead | null = null;
   
     switch (currentBulkAction) {
       case 'assign_owner':
         updateData = { responsavel_id: value };
         const ownerName = users?.find(u => u.id === value)?.full_name || 'desconhecido';
         successMessage = `${selectedLeadIds.length} leads foram atribuídos a "${ownerName}".`;
+        backupField = 'responsavel_id' as keyof Lead;
         break;
       case 'change_status':
         updateData = { status: value };
         successMessage = `${selectedLeadIds.length} leads tiveram o status alterado para "${value}".`;
+        backupField = 'status';
         break;
       case 'change_niche':
         updateData = { nicho: value };
         successMessage = `${selectedLeadIds.length} leads tiveram o nicho alterado para "${value}".`;
+        backupField = 'nicho';
         break;
       case 'set_followup':
         updateData = { proximo_followup: value };
         successMessage = `${selectedLeadIds.length} leads tiveram o próximo follow-up definido para ${format(value, 'dd/MM/yyyy')}.`;
+        backupField = 'proximo_followup' as keyof Lead;
         break;
       default:
         return;
     }
+
+    const leadsToUpdate = [...selectedLeads];
+    const backup = leadsToUpdate.map(lead => ({ id: lead.id, oldValue: backupField ? lead[backupField as keyof typeof lead] : null }));
   
     performAction({
       message: successMessage,
@@ -235,7 +243,13 @@ const LeadsPage = () => {
         setRowSelection({});
       },
       undoAction: async () => {
-        showError("Ação de desfazer para esta operação em massa não está implementada.");
+        if (!backupField) return;
+        const restorePromises = backup.map(b => 
+          supabase.from('leads').update({ [backupField!]: b.oldValue }).eq('id', b.id)
+        );
+        const results = await Promise.all(restorePromises);
+        const firstError = results.find(res => res.error);
+        if (firstError) throw firstError.error;
         queryClient.invalidateQueries({ queryKey: ['leads'] });
       },
     });

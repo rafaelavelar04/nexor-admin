@@ -35,7 +35,6 @@ import AlertsPage from "./pages/admin/AlertsPage";
 import PartnersPage from "./pages/admin/PartnersPage";
 import PartnerFormPage from "./pages/admin/partners/PartnerFormPage";
 import AssignmentsPage from "./pages/admin/AssignmentsPage";
-import ImportHistoryPage from "./pages/admin/ImportHistoryPage";
 import { config } from "./config";
 
 const queryClient = new QueryClient({
@@ -71,7 +70,6 @@ const App = () => (
                     <Route path="opportunities" element={<Opportunities />} />
                     <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/import-history" element={<ImportHistoryPage />} />
                     <Route path="webhooks/:id/logs" element={<WebhookLogsPage />} />
                     <Route path="metas" element={<GoalsPage />} />
                     <Route path="companies" element={<CompaniesPage />} />
