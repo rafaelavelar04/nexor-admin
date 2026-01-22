@@ -81,39 +81,6 @@ const LeadsPage = () => {
     }
   });
 
-  const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original?.id).filter(Boolean), [rowSelection, table.getRowModel().rows]);
-  const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original).filter(Boolean), [rowSelection, table.getRowModel().rows]);
-
-  const handleBulkDelete = () => {
-    const leadsToDelete = [...selectedLeads];
-    performAction({
-      message: `${leadsToDelete.length} leads foram excluídos.`,
-      action: async () => {
-        const { error } = await supabase.from('leads').delete().in('id', leadsToDelete.map(l => l.id));
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-        setRowSelection({});
-      },
-      undoAction: async () => {
-        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, ...rest }) => rest);
-        const { error } = await supabase.from('leads').insert(leadsToRestore);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-    });
-  };
-
-  const handleBulkExport = () => {
-    const selectedData = selectedLeads.map(lead => {
-      const { responsavel, ...rest } = lead;
-      return {
-        ...rest,
-        responsavel_nome: responsavel?.full_name || 'N/A',
-      };
-    });
-    exportToCsv(`leads_selecionados_${new Date().toISOString().split('T')[0]}.csv`, selectedData);
-  };
-
   const handleDelete = (id: string) => {
     const leadToDelete = leads.find(l => l.id === id);
     if (!leadToDelete) return;
@@ -154,11 +121,42 @@ const LeadsPage = () => {
     state: { sorting, columnFilters, rowSelection },
   });
 
+  const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original?.id).filter(Boolean), [rowSelection, table.getRowModel().rows]);
+  const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original).filter(Boolean), [rowSelection, table.getRowModel().rows]);
+
+  const handleBulkDelete = () => {
+    const leadsToDelete = [...selectedLeads];
+    performAction({
+      message: `${leadsToDelete.length} leads foram excluídos.`,
+      action: async () => {
+        const { error } = await supabase.from('leads').delete().in('id', leadsToDelete.map(l => l.id));
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+        setRowSelection({});
+      },
+      undoAction: async () => {
+        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, ...rest }) => rest);
+        const { error } = await supabase.from('leads').insert(leadsToRestore);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
+    });
+  };
+
+  const handleBulkExport = () => {
+    const selectedData = selectedLeads.map(lead => {
+      const { responsavel, ...rest } = lead;
+      return {
+        ...rest,
+        responsavel_nome: responsavel?.full_name || 'N/A',
+      };
+    });
+    exportToCsv(`leads_selecionados_${new Date().toISOString().split('T')[0]}.csv`, selectedData);
+  };
+
   useEffect(() => {
     table.getColumn("created_at")?.setFilterValue(dateRange);
   }, [dateRange, table]);
-
-  const filteredLeads = table.getFilteredRowModel().rows;
 
   const handleConfirmBulkDelete = async (criteria: any, count: number) => {
     const { error } = await supabase.rpc('delete_leads_in_bulk', {
