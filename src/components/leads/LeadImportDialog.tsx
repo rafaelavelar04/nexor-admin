@@ -19,7 +19,6 @@ interface LeadImportDialogProps {
   onClose: () => void;
 }
 
-// ... (funções parseCSV, parseInstagramUsername, normalizePhone permanecem as mesmas) ...
 const parseCSV = (text: string): Record<string, string>[] => {
   const lines = text.trim().replace(/\r/g, '').split('\n');
   if (lines.length < 2) return [];
