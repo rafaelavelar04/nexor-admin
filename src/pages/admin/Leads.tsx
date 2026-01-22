@@ -6,7 +6,7 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload, Trash2, User, Tag, Activity, Calendar } from 'lucide-react';
+import { Loader2, Users, Upload, Trash2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
 import { DateRange } from 'react-day-picker';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { BulkActionDialog, BulkActionType } from '@/components/leads/BulkActionDialog';
 import { NICHOS } from '@/lib/constants';
@@ -34,7 +33,6 @@ const LeadsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isDeleteFilteredAlertOpen, setIsDeleteFilteredAlertOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -81,44 +79,11 @@ const LeadsPage = () => {
     }
   });
 
-  const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => leads[parseInt(index, 10)]?.id).filter(Boolean), [rowSelection, leads]);
-  const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => leads[parseInt(index, 10)]).filter(Boolean), [rowSelection, leads]);
-
-  const handleBulkStatusChange = (status: string) => {
-    performAction({
-      message: `${selectedLeadIds.length} leads tiveram o status alterado para "${status}".`,
-      action: async () => {
-        const { error } = await supabase.from('leads').update({ status }).in('id', selectedLeadIds);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-        setRowSelection({});
-      },
-      undoAction: async () => {
-        showError("Ação de desfazer para alteração de status em massa não está implementada.");
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-    });
-  };
-
-  const handleBulkOwnerChange = (responsavel_id: string) => {
-    const ownerName = users?.find(u => u.id === responsavel_id)?.full_name || 'desconhecido';
-    performAction({
-      message: `${selectedLeadIds.length} leads foram atribuídos a "${ownerName}".`,
-      action: async () => {
-        const { error } = await supabase.from('leads').update({ responsavel_id }).in('id', selectedLeadIds);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-        setRowSelection({});
-      },
-      undoAction: async () => {
-        showError("Ação de desfazer para atribuição em massa não está implementada.");
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-    });
-  };
+  const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original?.id).filter(Boolean), [rowSelection, table.getRowModel().rows]);
+  const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original).filter(Boolean), [rowSelection, table.getRowModel().rows]);
 
   const handleBulkDelete = () => {
-    const leadsToDelete = [...selectedLeads]; // Copia para evitar problemas de referência
+    const leadsToDelete = [...selectedLeads];
     performAction({
       message: `${leadsToDelete.length} leads foram excluídos.`,
       action: async () => {
@@ -191,33 +156,9 @@ const LeadsPage = () => {
     table.getColumn("created_at")?.setFilterValue(dateRange);
   }, [dateRange, table]);
 
-  const filteredLeads = table.getFilteredRowModel().rows;
-  const isFiltered = columnFilters.length > 0 || dateRange;
-
-  const handleConfirmDeleteFiltered = () => {
-    const leadsToDelete = isFiltered ? filteredLeads.map(row => row.original as Lead) : leads;
-    const leadIdsToDelete = leadsToDelete.map(l => l.id);
-
-    performAction({
-      message: `${leadIdsToDelete.length} leads foram excluídos.`,
-      action: async () => {
-        const { error } = await supabase.from('leads').delete().in('id', leadIdsToDelete);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-      undoAction: async () => {
-        const leadsToRestore = leadsToDelete.map(({ id, created_at, updated_at, responsavel, tags, ...rest }) => rest);
-        const { error } = await supabase.from('leads').insert(leadsToRestore);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-    });
-    setIsDeleteFilteredAlertOpen(false);
-  };
-
   const openBulkActionDialog = (action: BulkActionType) => {
-    if (filteredLeads.length === 0) {
-      showError("Nenhum lead corresponde aos filtros aplicados para realizar a ação.");
+    if (selectedLeadIds.length === 0) {
+      showError("Nenhum lead selecionado para realizar a ação.");
       return;
     }
     setCurrentBulkAction(action);
@@ -225,7 +166,6 @@ const LeadsPage = () => {
   };
 
   const handleConfirmBulkAction = (value: any) => {
-    const leadIdsToUpdate = filteredLeads.map(row => row.original.id);
     let updateData: Record<string, any> = {};
     let successMessage = '';
   
@@ -233,19 +173,19 @@ const LeadsPage = () => {
       case 'assign_owner':
         updateData = { responsavel_id: value };
         const ownerName = users?.find(u => u.id === value)?.full_name || 'desconhecido';
-        successMessage = `${leadIdsToUpdate.length} leads foram atribuídos a "${ownerName}".`;
+        successMessage = `${selectedLeadIds.length} leads foram atribuídos a "${ownerName}".`;
         break;
       case 'change_status':
         updateData = { status: value };
-        successMessage = `${leadIdsToUpdate.length} leads tiveram o status alterado para "${value}".`;
+        successMessage = `${selectedLeadIds.length} leads tiveram o status alterado para "${value}".`;
         break;
       case 'change_niche':
         updateData = { nicho: value };
-        successMessage = `${leadIdsToUpdate.length} leads tiveram o nicho alterado para "${value}".`;
+        successMessage = `${selectedLeadIds.length} leads tiveram o nicho alterado para "${value}".`;
         break;
       case 'set_followup':
         updateData = { proximo_followup: value };
-        successMessage = `${leadIdsToUpdate.length} leads tiveram o próximo follow-up definido para ${format(value, 'dd/MM/yyyy')}.`;
+        successMessage = `${selectedLeadIds.length} leads tiveram o próximo follow-up definido para ${format(value, 'dd/MM/yyyy')}.`;
         break;
       default:
         return;
@@ -254,9 +194,10 @@ const LeadsPage = () => {
     performAction({
       message: successMessage,
       action: async () => {
-        const { error } = await supabase.from('leads').update(updateData).in('id', leadIdsToUpdate);
+        const { error } = await supabase.from('leads').update(updateData).in('id', selectedLeadIds);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['leads'] });
+        setRowSelection({});
       },
       undoAction: async () => {
         showError("Ação de desfazer para esta operação em massa não está implementada.");
@@ -271,7 +212,7 @@ const LeadsPage = () => {
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (error) return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error}</div>;
-    if (leads.length === 0 && !isFiltered) {
+    if (leads.length === 0 && columnFilters.length === 0) {
       return <EmptyState icon={<Users className="w-12 h-12" />} title="Nenhum lead encontrado" description="Adicione seu primeiro lead para visualizá-lo aqui." cta={canManage ? { text: "Novo Lead", onClick: () => navigate('/admin/leads/novo') } : undefined} />;
     }
     return <LeadsDataTable table={table} />;
@@ -288,22 +229,6 @@ const LeadsPage = () => {
         </div>
         {canManage && (
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">Ações em Massa</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openBulkActionDialog('assign_owner')}><User className="w-4 h-4 mr-2" />Atribuir Responsável...</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openBulkActionDialog('change_status')}><Activity className="w-4 h-4 mr-2" />Alterar Status...</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openBulkActionDialog('change_niche')}><Tag className="w-4 h-4 mr-2" />Alterar Nicho...</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openBulkActionDialog('set_followup')}><Calendar className="w-4 h-4 mr-2" />Definir Follow-up...</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setIsDeleteFilteredAlertOpen(true)} disabled={leads.length === 0} className="text-destructive focus:text-destructive">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir Leads...
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Button onClick={() => setIsImportModalOpen(true)} variant="outline"><Upload className="w-4 h-4 mr-2" />Importar</Button>
             <Button onClick={() => navigate('/admin/leads/novo')}><PlusCircle className="w-4 h-4 mr-2" />Novo Lead</Button>
           </div>
@@ -319,47 +244,20 @@ const LeadsPage = () => {
       {canManage && (
         <BulkActionBar
           selectedCount={selectedLeadIds.length}
-          onStatusChange={handleBulkStatusChange}
-          onOwnerChange={handleBulkOwnerChange}
-          onAddTags={() => alert("Funcionalidade 'Adicionar Tags' em desenvolvimento.")}
-          onRemoveTags={() => alert("Funcionalidade 'Remover Tags' em desenvolvimento.")}
+          onTriggerAction={openBulkActionDialog}
           onExport={handleBulkExport}
           onDelete={handleBulkDelete}
-          statusOptions={statusOptions}
-          users={users || []}
         />
       )}
 
       <ConvertLeadModal isOpen={isConvertModalOpen} onClose={() => { setIsConvertModalOpen(false); setSelectedLead(null); }} leadId={selectedLead?.id || null} leadName={selectedLead?.nome || null} />
       <LeadImportDialog isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
 
-      <AlertDialog open={isDeleteFilteredAlertOpen} onOpenChange={setIsDeleteFilteredAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão em Massa</AlertDialogTitle>
-            <AlertDialogDescription>
-              {isFiltered
-                ? `Tem certeza que deseja excluir permanentemente os ${filteredLeads.length} leads que correspondem aos filtros aplicados?`
-                : `Você está prestes a excluir TODOS os ${leads.length} leads do sistema. Tem certeza?`
-              }
-              <br />
-              <strong>Esta ação não pode ser desfeita facilmente.</strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDeleteFiltered} className="bg-destructive hover:bg-destructive/90">
-              Sim, excluir {isFiltered ? filteredLeads.length : leads.length} leads
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <BulkActionDialog
         isOpen={isBulkActionModalOpen}
         onClose={() => setIsBulkActionModalOpen(false)}
         actionType={currentBulkAction}
-        leadCount={filteredLeads.length}
+        leadCount={selectedLeadIds.length}
         onConfirm={handleConfirmBulkAction}
         users={users}
         statusOptions={statusOptions}
