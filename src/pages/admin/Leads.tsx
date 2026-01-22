@@ -6,7 +6,7 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload, Trash2, User, Tag } from 'lucide-react';
+import { Loader2, Users, Upload, Trash2, User, Tag, Activity, Calendar } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,9 @@ import { useActionManager } from '@/contexts/ActionManagerContext';
 import { DateRange } from 'react-day-picker';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { BulkActionDialog, BulkActionType } from '@/components/leads/BulkActionDialog';
+import { NICHOS } from '@/lib/constants';
+import { format } from 'date-fns';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -37,6 +40,8 @@ const LeadsPage = () => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [isBulkActionModalOpen, setIsBulkActionModalOpen] = useState(false);
+  const [currentBulkAction, setCurrentBulkAction] = useState<BulkActionType | null>(null);
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -210,6 +215,59 @@ const LeadsPage = () => {
     setIsDeleteFilteredAlertOpen(false);
   };
 
+  const openBulkActionDialog = (action: BulkActionType) => {
+    if (filteredLeads.length === 0) {
+      showError("Nenhum lead corresponde aos filtros aplicados para realizar a ação.");
+      return;
+    }
+    setCurrentBulkAction(action);
+    setIsBulkActionModalOpen(true);
+  };
+
+  const handleConfirmBulkAction = (value: any) => {
+    const leadIdsToUpdate = filteredLeads.map(row => row.original.id);
+    let updateData: Record<string, any> = {};
+    let successMessage = '';
+  
+    switch (currentBulkAction) {
+      case 'assign_owner':
+        updateData = { responsavel_id: value };
+        const ownerName = users?.find(u => u.id === value)?.full_name || 'desconhecido';
+        successMessage = `${leadIdsToUpdate.length} leads foram atribuídos a "${ownerName}".`;
+        break;
+      case 'change_status':
+        updateData = { status: value };
+        successMessage = `${leadIdsToUpdate.length} leads tiveram o status alterado para "${value}".`;
+        break;
+      case 'change_niche':
+        updateData = { nicho: value };
+        successMessage = `${leadIdsToUpdate.length} leads tiveram o nicho alterado para "${value}".`;
+        break;
+      case 'set_followup':
+        updateData = { proximo_followup: value };
+        successMessage = `${leadIdsToUpdate.length} leads tiveram o próximo follow-up definido para ${format(value, 'dd/MM/yyyy')}.`;
+        break;
+      default:
+        return;
+    }
+  
+    performAction({
+      message: successMessage,
+      action: async () => {
+        const { error } = await supabase.from('leads').update(updateData).in('id', leadIdsToUpdate);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
+      undoAction: async () => {
+        showError("Ação de desfazer para esta operação em massa não está implementada.");
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      },
+    });
+  
+    setIsBulkActionModalOpen(false);
+    setCurrentBulkAction(null);
+  };
+
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (error) return <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error}</div>;
@@ -235,20 +293,12 @@ const LeadsPage = () => {
                 <Button variant="outline">Ações em Massa</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>
-                  <User className="w-4 h-4 mr-2" />
-                  Atribuir Responsável em Massa
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled>
-                  <Tag className="w-4 h-4 mr-2" />
-                  Adicionar Tags em Massa
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openBulkActionDialog('assign_owner')}><User className="w-4 h-4 mr-2" />Atribuir Responsável...</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openBulkActionDialog('change_status')}><Activity className="w-4 h-4 mr-2" />Alterar Status...</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openBulkActionDialog('change_niche')}><Tag className="w-4 h-4 mr-2" />Alterar Nicho...</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openBulkActionDialog('set_followup')}><Calendar className="w-4 h-4 mr-2" />Definir Follow-up...</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setIsDeleteFilteredAlertOpen(true)}
-                  disabled={leads.length === 0}
-                  className="text-destructive focus:text-destructive"
-                >
+                <DropdownMenuItem onClick={() => setIsDeleteFilteredAlertOpen(true)} disabled={leads.length === 0} className="text-destructive focus:text-destructive">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Excluir Leads...
                 </DropdownMenuItem>
@@ -304,6 +354,17 @@ const LeadsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkActionDialog
+        isOpen={isBulkActionModalOpen}
+        onClose={() => setIsBulkActionModalOpen(false)}
+        actionType={currentBulkAction}
+        leadCount={filteredLeads.length}
+        onConfirm={handleConfirmBulkAction}
+        users={users}
+        statusOptions={statusOptions}
+        nichoOptions={NICHOS.map(n => ({ value: n, label: n }))}
+      />
     </div>
   );
 };
