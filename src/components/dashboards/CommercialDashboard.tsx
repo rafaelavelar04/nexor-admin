@@ -1,12 +1,51 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { Loader2, Users, Briefcase, Percent, DollarSign } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ReportCard } from '@/components/reports/ReportCard';
 import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Users, Briefcase, Percent, DollarSign } from 'lucide-react';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8A2BE2'];
 
-const CommercialDashboard = ({ data }: { data: any }) => {
+interface CommercialDashboardProps {
+  dateRange: DateRange | undefined;
+}
+
+const CommercialDashboard = ({ dateRange }: CommercialDashboardProps) => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['commercialDashboardData', dateRange],
+    queryFn: async () => {
+      if (!dateRange?.from || !dateRange?.to) return null;
+      const { data, error } = await supabase.rpc('get_dashboards_data', {
+        start_date: format(dateRange.from, 'yyyy-MM-dd'),
+        end_date: format(dateRange.to, 'yyyy-MM-dd'),
+      });
+      if (error) throw error;
+      return data.commercial;
+    },
+    enabled: !!dateRange?.from && !!dateRange?.to,
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-96"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (isError) {
+    return <div className="text-destructive mt-6 p-4 border border-destructive/50 bg-destructive/10 rounded-md">Erro ao carregar dados comerciais. Tente atualizar o período.</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="mt-6">
+        <EmptyState icon={<Briefcase className="w-12 h-12" />} title="Sem dados comerciais" description="Não há dados comerciais para exibir no período selecionado." />
+      </div>
+    );
+  }
+
   const funnelData = [
     { name: 'Leads', value: data.funnel_chart.leads },
     { name: 'Oportunidades', value: data.funnel_chart.opportunities },

@@ -1,12 +1,50 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Loader2, FileText, UserX, AlertTriangle, DollarSign } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Link } from 'react-router-dom';
-import { FileText, UserX, AlertTriangle, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { EmptyState } from '@/components/common/EmptyState';
 
-const OperationalDashboard = ({ data }: { data: any }) => {
+interface OperationalDashboardProps {
+  dateRange: DateRange | undefined;
+}
+
+const OperationalDashboard = ({ dateRange }: OperationalDashboardProps) => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['operationalDashboardData', dateRange],
+    queryFn: async () => {
+      if (!dateRange?.from || !dateRange?.to) return null;
+      const { data, error } = await supabase.rpc('get_dashboards_data', {
+        start_date: format(dateRange.from, 'yyyy-MM-dd'),
+        end_date: format(dateRange.to, 'yyyy-MM-dd'),
+      });
+      if (error) throw error;
+      return data.operational;
+    },
+    enabled: !!dateRange?.from && !!dateRange?.to,
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-96"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (isError) {
+    return <div className="text-destructive mt-6 p-4 border border-destructive/50 bg-destructive/10 rounded-md">Erro ao carregar dados operacionais. Tente atualizar o período.</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="mt-6">
+        <EmptyState icon={<FileText className="w-12 h-12" />} title="Sem dados operacionais" description="Não há dados operacionais para exibir no período selecionado." />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 mt-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

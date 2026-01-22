@@ -1,10 +1,49 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { Loader2, DollarSign, Percent, PiggyBank } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ReportCard } from '@/components/reports/ReportCard';
 import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { DollarSign, TrendingUp, Percent, PiggyBank } from 'lucide-react';
+import { EmptyState } from '@/components/common/EmptyState';
 
-const FinancialDashboard = ({ data }: { data: any }) => {
+interface FinancialDashboardProps {
+  dateRange: DateRange | undefined;
+}
+
+const FinancialDashboard = ({ dateRange }: FinancialDashboardProps) => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['financialDashboardData', dateRange],
+    queryFn: async () => {
+      if (!dateRange?.from || !dateRange?.to) return null;
+      const { data, error } = await supabase.rpc('get_dashboards_data', {
+        start_date: format(dateRange.from, 'yyyy-MM-dd'),
+        end_date: format(dateRange.to, 'yyyy-MM-dd'),
+      });
+      if (error) throw error;
+      return data.financial;
+    },
+    enabled: !!dateRange?.from && !!dateRange?.to,
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-96"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (isError) {
+    return <div className="text-destructive mt-6 p-4 border border-destructive/50 bg-destructive/10 rounded-md">Erro ao carregar dados financeiros. Tente atualizar o período.</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="mt-6">
+        <EmptyState icon={<DollarSign className="w-12 h-12" />} title="Sem dados financeiros" description="Não há dados financeiros para exibir no período selecionado." />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 mt-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
