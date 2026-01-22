@@ -29,14 +29,22 @@ export default defineConfig(() => ({
         start_url: '/',
         icons: [
           {
-            src: '/branding/icon-192x192.png',
+            src: '/branding/nexor-icon-192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: '/branding/icon-512x512.png',
+            src: '/branding/nexor-icon-512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/branding/nexor-icon-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },
