@@ -14,11 +14,14 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { useNavigate } from "react-router-dom"
 import { format } from "date-fns"
+import { Badge } from "../ui/badge"
+import { cn } from "@/lib/utils"
 
 export type Lead = {
   id: string
   nome: string
   empresa: string
+  status: string
   instagram_empresa: string | null
   whatsapp: string | null
   nicho: string
@@ -26,6 +29,16 @@ export type Lead = {
   responsavel: { full_name: string } | null
   created_at: string
 }
+
+const statusStyles: Record<string, string> = {
+  "Não contatado": "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  "Primeiro contato feito": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  "Sem resposta": "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  "Em conversa": "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  "Follow-up agendado": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  "Não interessado": "bg-red-500/20 text-red-300 border-red-500/30",
+  "Convertido": "bg-green-500/20 text-green-300 border-green-500/30",
+};
 
 export const getColumns = (
   handleDelete: (id: string) => void,
@@ -63,12 +76,24 @@ export const getColumns = (
     header: "Empresa",
   },
   {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge className={cn("capitalize whitespace-nowrap", statusStyles[status] || statusStyles["Não contatado"])}>
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "instagram_empresa",
     header: "Instagram",
     cell: ({ row }) => {
       const instagram = row.original.instagram_empresa;
       if (!instagram) return "N/A";
-      const url = instagram.startsWith('@') ? `https://instagram.com/${instagram.substring(1)}` : instagram;
+      const url = instagram.startsWith('@') ? `https://instagram.com/${instagram.substring(1)}` : `https://instagram.com/${instagram}`;
       return <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><Instagram className="w-3 h-3" />{instagram}</a>
     },
     meta: {
