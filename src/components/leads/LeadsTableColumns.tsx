@@ -96,9 +96,6 @@ export const getColumns = (
       const url = instagram.startsWith('@') ? `https://instagram.com/${instagram.substring(1)}` : `https://instagram.com/${instagram}`;
       return <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><Instagram className="w-3 h-3" />{instagram}</a>
     },
-    meta: {
-      className: "hidden md:table-cell",
-    },
   },
   {
     accessorKey: "whatsapp",
@@ -113,9 +110,6 @@ export const getColumns = (
   {
     accessorKey: "nicho",
     header: "Nicho",
-    meta: {
-      className: "hidden lg:table-cell",
-    },
   },
   {
     accessorKey: "site_empresa",
@@ -125,18 +119,12 @@ export const getColumns = (
       if (!site) return "N/A";
       return <a href={site} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:underline"><LinkIcon className="w-3 h-3" />Visitar</a>
     },
-    meta: {
-      className: "hidden lg:table-cell",
-    },
   },
   {
     accessorKey: "responsavel",
     header: "Responsável",
     cell: ({ row }) => row.original.responsavel?.full_name || "N/A",
     enableSorting: false,
-    meta: {
-      className: "hidden md:table-cell",
-    },
   },
   {
     accessorKey: "created_at",

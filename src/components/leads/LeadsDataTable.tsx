@@ -13,13 +13,26 @@ import { NICHOS } from "@/lib/constants"
 import { DateRange } from "react-day-picker"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, SlidersHorizontal } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface DataTableProps<TData, TValue> {
   table: TableType<TData>
 }
+
+const columnDisplayNames: Record<string, string> = {
+  'nome': 'Nome',
+  'empresa': 'Empresa',
+  'status': 'Status',
+  'instagram_empresa': 'Instagram',
+  'whatsapp': 'Telefone',
+  'nicho': 'Nicho',
+  'site_empresa': 'Site',
+  'responsavel': 'Responsável',
+  'created_at': 'Criado em',
+};
 
 export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, TValue>({
   table,
@@ -81,6 +94,35 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
               />
             </PopoverContent>
           </Popover>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="bg-gray-800 border-gray-700">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                Colunas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-gray-800 text-white border-gray-700">
+              <DropdownMenuLabel>Exibir/Ocultar Colunas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {columnDisplayNames[column.id] || column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <div className="rounded-md border border-gray-700 overflow-x-auto">
@@ -90,7 +132,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
               <TableRow key={headerGroup.id} className="border-gray-700 hover:bg-gray-800/50">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className={`text-white ${(header.column.columnDef.meta as any)?.className}`}>
+                    <TableHead key={header.id} className="text-white">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -112,7 +154,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
                   className="border-gray-700 hover:bg-gray-800/50"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className={(cell.column.columnDef.meta as any)?.className}>
+                    <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

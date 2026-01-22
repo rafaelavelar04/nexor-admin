@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
-import { RowSelectionState, ColumnFiltersState, useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, SortingState } from '@tanstack/react-table';
+import { RowSelectionState, ColumnFiltersState, useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, getFilteredRowModel, SortingState, ColumnVisibilityState } from '@tanstack/react-table';
 import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
@@ -23,6 +23,7 @@ import { BulkActionDialog, BulkActionType } from '@/components/leads/BulkActionD
 import { BulkDeleteDialog } from '@/components/leads/BulkDeleteDialog';
 import { NICHOS } from '@/lib/constants';
 import { format } from 'date-fns';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -42,6 +43,12 @@ const LeadsPage = () => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isBulkActionModalOpen, setIsBulkActionModalOpen] = useState(false);
   const [currentBulkAction, setCurrentBulkAction] = useState<BulkActionType | null>(null);
+  const [columnVisibility, setColumnVisibility] = useLocalStorage<ColumnVisibilityState>('leads-column-visibility', {
+    'instagram_empresa': false,
+    'nicho': false,
+    'site_empresa': false,
+    'responsavel': false,
+  });
 
   const canManage = profile?.role === 'admin' || profile?.role === 'vendas';
 
@@ -118,7 +125,8 @@ const LeadsPage = () => {
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection,
-    state: { sorting, columnFilters, rowSelection },
+    onColumnVisibilityChange: setColumnVisibility,
+    state: { sorting, columnFilters, rowSelection, columnVisibility },
   });
 
   const selectedLeadIds = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original?.id).filter(Boolean), [rowSelection, table.getRowModel().rows]);
