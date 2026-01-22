@@ -88,6 +88,33 @@ const LeadsPage = () => {
     }
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ leadId, newStatus }: { leadId: string, newStatus: string }) => {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status: newStatus })
+        .eq('id', leadId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { leadId, newStatus }) => {
+      queryClient.setQueryData(['leads'], (oldData: any[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.map(lead =>
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        );
+      });
+      showSuccess("Status do lead atualizado!");
+    },
+    onError: (error: any) => {
+      showError(`Erro ao atualizar status: ${error.message}`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    },
+  });
+
+  const handleStatusChange = (leadId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ leadId, newStatus });
+  };
+
   const handleDelete = (id: string) => {
     const leadToDelete = leads.find(l => l.id === id);
     if (!leadToDelete) return;
@@ -113,7 +140,7 @@ const LeadsPage = () => {
     setIsConvertModalOpen(true);
   };
 
-  const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role), [profile?.role]);
+  const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role, handleStatusChange), [profile?.role]);
 
   const table = useReactTable({
     data: leads,

@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom"
 import { format } from "date-fns"
 import { Badge } from "../ui/badge"
 import { cn } from "@/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export type Lead = {
   id: string
@@ -43,7 +44,8 @@ const statusStyles: Record<string, string> = {
 export const getColumns = (
   handleDelete: (id: string) => void,
   handleConvert: (lead: Lead) => void,
-  role: string | null | undefined
+  role: string | null | undefined,
+  onStatusChange: (leadId: string, newStatus: string) => void
 ): ColumnDef<Lead>[] => [
   {
     id: "select",
@@ -79,11 +81,36 @@ export const getColumns = (
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.original.status;
+      const lead = row.original;
+      const statusOptions = [
+        "Não contatado", "Primeiro contato feito", "Sem resposta",
+        "Em conversa", "Follow-up agendado", "Não interessado",
+        "Convertido",
+      ];
+      const canEditStatus = role === 'admin' || role === 'vendas';
+
+      if (!canEditStatus) {
+        return (
+          <Badge className={cn("capitalize whitespace-nowrap", statusStyles[lead.status] || statusStyles["Não contatado"])}>
+            {lead.status}
+          </Badge>
+        );
+      }
+
       return (
-        <Badge className={cn("capitalize whitespace-nowrap", statusStyles[status] || statusStyles["Não contatado"])}>
-          {status}
-        </Badge>
+        <Select
+          value={lead.status}
+          onValueChange={(newStatus) => onStatusChange(lead.id, newStatus)}
+        >
+          <SelectTrigger className={cn("w-[180px] capitalize border-0 focus:ring-0 focus:ring-offset-0", statusStyles[lead.status] || statusStyles["Não contatado"])}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map(s => (
+              <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       );
     },
   },
