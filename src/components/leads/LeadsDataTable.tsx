@@ -7,15 +7,7 @@ import {
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { NICHOS } from "@/lib/constants"
-import { DateRange } from "react-day-picker"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { Calendar as CalendarIcon, SlidersHorizontal } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { SlidersHorizontal } from "lucide-react"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface DataTableProps<TData, TValue> {
@@ -23,6 +15,7 @@ interface DataTableProps<TData, TValue> {
 }
 
 const columnDisplayNames: Record<string, string> = {
+  'select': 'Seleção',
   'nome': 'Nome',
   'empresa': 'Empresa',
   'status': 'Status',
@@ -32,76 +25,24 @@ const columnDisplayNames: Record<string, string> = {
   'site_empresa': 'Site',
   'responsavel': 'Responsável',
   'created_at': 'Criado em',
+  'actions': 'Ações',
 };
 
 export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, TValue>({
   table,
 }: DataTableProps<TData, TValue>) {
   
-  const dateRange = table.getColumn("created_at")?.getFilterValue() as DateRange | undefined;
-  const setDateRange = (value: DateRange | undefined) => table.getColumn("created_at")?.setFilterValue(value);
-
   return (
     <div>
-      <div className="flex items-center justify-between py-4 gap-2 flex-wrap">
-        <Input
-          placeholder="Filtrar por nome..."
-          value={(table.getColumn("nome")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("nome")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm bg-gray-800 border-gray-700"
-        />
-        <div className="flex items-center space-x-2 flex-wrap gap-2">
-          <Select
-            value={(table.getColumn("nicho")?.getFilterValue() as string) ?? ""}
-            onValueChange={(value) => table.getColumn("nicho")?.setFilterValue(value === "all" ? "" : value)}
-          >
-            <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
-              <SelectValue placeholder="Filtrar por nicho" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 text-white border-gray-700">
-              <SelectItem value="all">Todos os nichos</SelectItem>
-              {NICHOS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn("w-[280px] justify-start text-left font-normal bg-gray-800 border-gray-700", !dateRange && "text-muted-foreground")}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>{format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}</>
-                  ) : (
-                    format(dateRange.from, "LLL dd, y")
-                  )
-                ) : (
-                  <span>Filtrar por data de criação</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+      <div className="flex items-center justify-end py-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="bg-gray-800 border-gray-700">
+              <Button variant="outline">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 Colunas
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-800 text-white border-gray-700">
+            <DropdownMenuContent align="end">
               <DropdownMenuLabel>Exibir/Ocultar Colunas</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {table
@@ -123,16 +64,15 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
       </div>
-      <div className="rounded-md border border-gray-700 overflow-x-auto">
+      <div className="rounded-md border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-gray-700 hover:bg-gray-800/50">
+              <TableRow key={headerGroup.id} className="border-border hover:bg-secondary/50">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="text-white">
+                    <TableHead key={header.id} className="text-foreground">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -151,7 +91,7 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-gray-700 hover:bg-gray-800/50"
+                  className="border-border hover:bg-secondary/50"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -169,26 +109,6 @@ export function LeadsDataTable<TData extends { responsavel: any; tags: any[] }, 
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          className="bg-gray-800 border-gray-700"
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          className="bg-gray-800 border-gray-700"
-        >
-          Próximo
-        </Button>
       </div>
     </div>
   )
