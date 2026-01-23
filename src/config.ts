@@ -25,7 +25,7 @@ const featureFlags = {
  * Ajuste os tempos de cache para otimizar a performance.
  */
 const queryClientConfig = {
-  staleTime: 1000 * 60 * 5, // 5 minutos
+  staleTime: Infinity, // Data never becomes stale automatically
   cacheTime: 1000 * 60 * 30, // 30 minutos
 };
 
