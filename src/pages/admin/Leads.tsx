@@ -76,6 +76,8 @@ const LeadsPage = () => {
     },
   });
 
+  const queryKey = ['leads', debouncedFilters, sorting, debouncedSearchTerm, pagination];
+
   const {
     data,
     error,
@@ -83,7 +85,7 @@ const LeadsPage = () => {
     isLoading,
     status,
   } = useQuery({
-    queryKey: ['leads', debouncedFilters, sorting, debouncedSearchTerm, pagination],
+    queryKey,
     queryFn: async () => {
       let query = supabase
         .from('leads')
@@ -122,31 +124,38 @@ const LeadsPage = () => {
     return data?.count ? Math.ceil(data.count / pagination.pageSize) : 0;
   }, [data?.count, pagination.pageSize]);
 
-  const handleStatusChange = (leadId: string, newStatus: string) => {
-    const oldStatus = leads.find(l => l.id === leadId)?.status;
-    
-    queryClient.setQueryData(['leads', debouncedFilters, sorting, pagination], (oldData: any) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        data: oldData.data.map((lead: Lead) =>
-          lead.id === leadId ? { ...lead, status: newStatus } : lead
-        ),
-      };
-    });
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ leadId, newStatus }: { leadId: string; newStatus: string }) => {
+      const { error } = await supabase.from('leads').update({ status: newStatus }).eq('id', leadId);
+      if (error) throw error;
+    },
+    onMutate: async ({ leadId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousData = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((lead: Lead) =>
+            lead.id === leadId ? { ...lead, status: newStatus } : lead
+          ),
+        };
+      });
+      return { previousData };
+    },
+    onError: (err: any, variables, context) => {
+      showError(`Erro ao atualizar status: ${err.message}`);
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
-    performAction({
-      message: `Status do lead alterado para "${newStatus}".`,
-      action: async () => {
-        const { error } = await supabase.from('leads').update({ status: newStatus }).eq('id', leadId);
-        if (error) throw error;
-      },
-      undoAction: async () => {
-        const { error } = await supabase.from('leads').update({ status: oldStatus }).eq('id', leadId);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      },
-    });
+  const handleStatusChange = (leadId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ leadId, newStatus });
   };
 
   const handleDelete = (id: string) => { /* ... */ };
