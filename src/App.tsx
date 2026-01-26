@@ -42,7 +42,8 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: config.queryClientConfig.staleTime,
       cacheTime: config.queryClientConfig.cacheTime,
-      refetchOnWindowFocus: false, // Evita refetchs desnecessários
+      refetchOnMount: config.queryClientConfig.refetchOnMount,
+      refetchOnWindowFocus: config.queryClientConfig.refetchOnWindowFocus,
     },
   },
 });

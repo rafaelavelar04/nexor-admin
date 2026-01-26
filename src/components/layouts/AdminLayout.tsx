@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PwaUpdater } from "../common/PwaUpdater";
 import { config } from "@/config";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -42,6 +43,8 @@ const AdminLayout = () => {
   const { setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useLocalStorage('sidebar-collapsed', false);
+  const mainScrollRef = useRef<HTMLElement>(null);
+  useScrollRestoration(mainScrollRef);
 
   const { data: unreadAlertsCount } = useQuery({
     queryKey: ['unreadAlertsCount', user?.id],
@@ -212,7 +215,7 @@ const AdminLayout = () => {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main ref={mainScrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>
