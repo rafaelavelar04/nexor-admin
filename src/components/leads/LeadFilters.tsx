@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { NICHOS } from "@/lib/constants";
 import { MultiSelectCreatable, Selectable } from "../ui/multi-select-creatable";
 import { DateRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -39,11 +38,12 @@ interface LeadFiltersProps {
   setFilters: (filters: LeadFilters) => void;
   users: { id: string; full_name: string }[];
   allTags: Selectable[];
+  nichoOptions: Selectable[];
 }
 
 const statusOptions = ["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado", "Convertido"];
 
-export const LeadFilters = ({ isOpen, onClose, filters, setFilters, users, allTags }: LeadFiltersProps) => {
+export const LeadFilters = ({ isOpen, onClose, filters, setFilters, users, allTags, nichoOptions }: LeadFiltersProps) => {
   const handleFilterChange = <K extends keyof LeadFilters>(key: K, value: LeadFilters[K]) => {
     setFilters({ ...filters, [key]: value });
   };
@@ -63,12 +63,9 @@ export const LeadFilters = ({ isOpen, onClose, filters, setFilters, users, allTa
           <SheetTitle>Filtros Avançados de Leads</SheetTitle>
         </SheetHeader>
         <div className="flex-grow overflow-y-auto p-1 pr-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div><Label>Nome</Label><Input value={filters.nome || ''} onChange={e => handleFilterChange('nome', e.target.value)} /></div>
-            <div><Label>Empresa</Label><Input value={filters.empresa || ''} onChange={e => handleFilterChange('empresa', e.target.value)} /></div>
-          </div>
+          {/* Nome e Empresa foram removidos daqui para a busca global */}
           <div><Label>Status</Label><MultiSelectCreatable options={statusOptions.map(s => ({ value: s, label: s, nome: s }))} selected={filters.status?.map(s => ({ value: s, label: s, nome: s })) || []} onChange={selected => handleMultiSelectChange('status', selected)} placeholder="Selecione os status..." /></div>
-          <div><Label>Nicho</Label><MultiSelectCreatable options={NICHOS.map(n => ({ value: n, label: n, nome: n }))} selected={filters.nicho?.map(n => ({ value: n, label: n, nome: n })) || []} onChange={selected => handleMultiSelectChange('nicho', selected)} placeholder="Selecione os nichos..." /></div>
+          <div><Label>Nicho</Label><MultiSelectCreatable options={nichoOptions} selected={filters.nicho?.map(n => ({ value: n, label: n, nome: n })) || []} onChange={selected => handleMultiSelectChange('nicho', selected)} placeholder="Selecione os nichos..." /></div>
           <div><Label>Responsável</Label><MultiSelectCreatable options={users.map(u => ({ value: u.id, label: u.full_name, nome: u.full_name }))} selected={filters.responsavel_id?.map(id => ({ value: id, label: users.find(u => u.id === id)?.full_name || id, nome: users.find(u => u.id === id)?.full_name || id })) || []} onChange={selected => handleMultiSelectChange('responsavel_id', selected)} placeholder="Selecione os responsáveis..." /></div>
           <div><Label>Tags</Label><MultiSelectCreatable options={allTags} selected={filters.tags?.map(id => allTags.find(t => t.value === id) || { value: id, label: id, nome: id }) || []} onChange={selected => handleMultiSelectChange('tags', selected)} placeholder="Selecione as tags..." /></div>
           <div className="grid grid-cols-2 gap-4">

@@ -6,7 +6,7 @@ import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
 import { ConvertLeadModal } from '@/components/leads/ConvertLeadModal';
 import { LeadImportDialog } from '@/components/leads/LeadImportDialog';
 import { BulkActionBar } from '@/components/leads/BulkActionBar';
-import { Loader2, Users, Upload, Trash2, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Users, Upload, Trash2, SlidersHorizontal, Search } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,11 @@ import { useActionManager } from '@/contexts/ActionManagerContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { BulkActionDialog, BulkActionType } from '@/components/leads/BulkActionDialog';
 import { BulkDeleteDialog } from '@/components/leads/BulkDeleteDialog';
-import { NICHOS } from '@/lib/constants';
 import { format } from 'date-fns';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { LeadFilters } from '@/components/leads/LeadFilters';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Input } from '@/components/ui/input';
 
 const LEADS_PER_PAGE = 50;
 
@@ -35,6 +35,8 @@ const LeadsPage = () => {
   const { performAction } = useActionManager();
 
   const [filters, setFilters] = useLocalStorage<any>('leads-filters', {});
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const debouncedFilters = useDebounce(filters, 500);
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -62,6 +64,16 @@ const LeadsPage = () => {
     queryFn: async () => (await supabase.from('tags').select('id, nome')).data?.map(t => ({ value: t.id, label: t.nome, nome: t.nome })) || [],
   });
 
+  const { data: nichoOptions = [] } = useQuery({
+    queryKey: ['distinctNichos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('leads').select('nicho');
+      if (error) throw error;
+      const uniqueNichos = [...new Set(data.map(item => item.nicho).filter(Boolean))];
+      return uniqueNichos.map(n => ({ value: n, label: n, nome: n }));
+    },
+  });
+
   const {
     data,
     error,
@@ -71,7 +83,7 @@ const LeadsPage = () => {
     isFetchingNextPage,
     status,
   } = useInfiniteQuery({
-    queryKey: ['leads', debouncedFilters, sorting],
+    queryKey: ['leads', debouncedFilters, sorting, debouncedSearchTerm],
     queryFn: async ({ pageParam = 0 }) => {
       let query = supabase
         .from('leads')
@@ -79,9 +91,12 @@ const LeadsPage = () => {
         .order(sorting[0]?.id || 'created_at', { ascending: !(sorting[0]?.desc ?? true) })
         .range(pageParam * LEADS_PER_PAGE, (pageParam + 1) * LEADS_PER_PAGE - 1);
 
-      // Apply filters
-      if (debouncedFilters.nome) query = query.ilike('nome', `%${debouncedFilters.nome}%`);
-      if (debouncedFilters.empresa) query = query.ilike('empresa', `%${debouncedFilters.empresa}%`);
+      // Apply global search term
+      if (debouncedSearchTerm) {
+        query = query.or(`nome.ilike.%${debouncedSearchTerm}%,empresa.ilike.%${debouncedSearchTerm}%,nicho.ilike.%${debouncedSearchTerm}%`);
+      }
+
+      // Apply advanced filters
       if (debouncedFilters.status?.length) query = query.in('status', debouncedFilters.status);
       if (debouncedFilters.nicho?.length) query = query.in('nicho', debouncedFilters.nicho);
       if (debouncedFilters.responsavel_id?.length) query = query.in('responsavel_id', debouncedFilters.responsavel_id);
@@ -114,7 +129,6 @@ const LeadsPage = () => {
   const handleStatusChange = (leadId: string, newStatus: string) => {
     const oldStatus = leads.find(l => l.id === leadId)?.status;
     
-    // Optimistic update
     queryClient.setQueryData(['leads', debouncedFilters, sorting], (oldData: any) => {
       if (!oldData) return oldData;
       return {
@@ -142,7 +156,7 @@ const LeadsPage = () => {
     });
   };
 
-  const handleDelete = (id: string) => { /* ... (implementation remains the same) ... */ };
+  const handleDelete = (id: string) => { /* ... */ };
   const handleConvert = (lead: Lead) => { setSelectedLead(lead); setIsConvertModalOpen(true); };
 
   const columns = useMemo(() => getColumns(handleDelete, handleConvert, profile?.role, handleStatusChange), [profile?.role]);
@@ -162,7 +176,6 @@ const LeadsPage = () => {
 
   const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original).filter(Boolean), [rowSelection, table.getRowModel().rows]);
 
-  // Bulk actions remain largely the same, just ensure they invalidate queries correctly.
   const handleBulkDelete = () => { /* ... */ };
   const handleBulkExport = () => { /* ... */ };
   const handleConfirmBulkDelete = (criteria: any, count: number) => { /* ... */ };
@@ -177,7 +190,6 @@ const LeadsPage = () => {
           <p className="text-muted-foreground mt-1">Gerencie e qualifique seus contatos de prospecção.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal className="w-4 h-4 mr-2" />Filtros</Button>
           {canManage && (
             <>
               <DropdownMenu>
@@ -194,7 +206,21 @@ const LeadsPage = () => {
         </div>
       </div>
       
-      <SavedFiltersManager pageKey="leads-v2" currentFilters={filters} onApplyFilter={setFilters} onClearFilters={() => setFilters({})} />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, empresa ou nicho..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setIsFiltersOpen(true)}><SlidersHorizontal className="w-4 h-4 mr-2" />Filtros Avançados</Button>
+          <SavedFiltersManager pageKey="leads-v2" currentFilters={filters} onApplyFilter={setFilters} onClearFilters={() => setFilters({})} />
+        </div>
+      </div>
 
       {status === 'pending' ? (
         <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -216,11 +242,11 @@ const LeadsPage = () => {
 
       {canManage && <BulkActionBar selectedCount={selectedLeads.length} onTriggerAction={openBulkActionDialog} onExport={handleBulkExport} onDelete={handleBulkDelete} />}
       
-      <LeadFilters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} filters={filters} setFilters={setFilters} users={users} allTags={allTags} />
+      <LeadFilters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} filters={filters} setFilters={setFilters} users={users} allTags={allTags} nichoOptions={nichoOptions} />
       <ConvertLeadModal isOpen={isConvertModalOpen} onClose={() => { setIsConvertModalOpen(false); setSelectedLead(null); }} leadId={selectedLead?.id || null} leadName={selectedLead?.nome || null} />
       <LeadImportDialog isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
       <BulkDeleteDialog isOpen={isBulkDeleteModalOpen} onClose={() => setIsBulkDeleteModalOpen(false)} onConfirm={handleConfirmBulkDelete} users={users} />
-      <BulkActionDialog isOpen={isBulkActionModalOpen} onClose={() => setIsBulkActionModalOpen(false)} actionType={currentBulkAction} leadCount={selectedLeads.length} onConfirm={handleConfirmBulkAction} users={users} statusOptions={["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado", "Convertido"]} nichoOptions={NICHOS.map(n => ({ value: n, label: n }))} />
+      <BulkActionDialog isOpen={isBulkActionModalOpen} onClose={() => setIsBulkActionModalOpen(false)} actionType={currentBulkAction} leadCount={selectedLeads.length} onConfirm={handleConfirmBulkAction} users={users} statusOptions={["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado", "Convertido"]} nichoOptions={nichoOptions} />
     </div>
   );
 };

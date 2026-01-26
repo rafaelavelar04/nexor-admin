@@ -19,7 +19,6 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Loader2, ArrowLeft, Shield, Download, Eraser } from 'lucide-react';
 import { DecisoresFormSection } from '@/components/leads/DecisoresFormSection';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NICHOS } from '@/lib/constants';
 import { PlaybookManager } from '@/components/leads/PlaybookManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import { exportToCsv } from '@/lib/exportUtils';
@@ -29,8 +28,6 @@ const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
   "Em conversa", "Follow-up agendado", "Não interessado",
 ];
-
-const nichoOptions = NICHOS.map(n => ({ value: n, label: n }));
 
 interface UserProfile { id: string; full_name: string; }
 type Tag = { id: string; nome: string; cor: string | null; };
@@ -91,6 +88,16 @@ const LeadFormPage = () => {
       const { data, error } = await supabase.from('tags').select('*');
       if (error) throw new Error(error.message);
       return data || [];
+    },
+  });
+
+  const { data: nichoOptions = [] } = useQuery({
+    queryKey: ['distinctNichos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('leads').select('nicho');
+      if (error) throw error;
+      const uniqueNichos = [...new Set(data.map(item => item.nicho).filter(Boolean))];
+      return uniqueNichos.map(n => ({ value: n, label: n }));
     },
   });
 
@@ -172,6 +179,7 @@ const LeadFormPage = () => {
       showSuccess(`Lead ${isEditMode ? 'atualizado' : 'criado'} com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['distinctNichos'] });
       navigate('/admin/leads');
     },
     onError: (error) => showError(`Erro ao salvar lead: ${error.message}`),
@@ -227,7 +235,7 @@ const LeadFormPage = () => {
             
             <Card className="bg-secondary/50"><CardHeader><CardTitle className="text-lg">Dados da Empresa</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField control={form.control} name="empresa" render={({ field }) => (<FormItem><FormLabel>Nome da Empresa</FormLabel><FormControl><Input placeholder="Empresa do lead" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="nicho" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Nicho</FormLabel><Combobox options={nichoOptions} value={field.value} onChange={field.onChange} placeholder="Selecione um nicho" allowCreation /><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="nicho" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Nicho</FormLabel><Combobox options={nichoOptions} value={field.value} onChange={field.onChange} placeholder="Selecione ou crie um nicho" allowCreation /><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="site_empresa" render={({ field }) => (<FormItem><FormLabel>Site</FormLabel><FormControl><Input placeholder="https://empresa.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="telefone_empresa" render={({ field }) => (<FormItem><FormLabel>Telefone</FormLabel><FormControl><Input placeholder="Telefone da empresa" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="instagram_empresa" render={({ field }) => (<FormItem><FormLabel>Instagram</FormLabel><FormControl><Input placeholder="@empresa" {...field} /></FormControl><FormMessage /></FormItem>)} />
