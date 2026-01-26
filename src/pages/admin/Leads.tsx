@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LeadsDataTable } from '@/components/leads/LeadsDataTable';
 import { getColumns, Lead } from '@/components/leads/LeadsTableColumns';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '@/components/common/EmptyState';
-import { RowSelectionState, useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnVisibilityState } from '@tanstack/react-table';
+import { RowSelectionState, useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnVisibilityState, PaginationState } from '@tanstack/react-table';
 import { exportToCsv } from '@/lib/exportUtils';
 import { SavedFiltersManager } from '@/components/common/SavedFiltersManager';
 import { useActionManager } from '@/contexts/ActionManagerContext';
@@ -26,8 +26,7 @@ import { LeadFilters } from '@/components/leads/LeadFilters';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Input } from '@/components/ui/input';
 import { NICHOS } from '@/lib/constants';
-
-const LEADS_PER_PAGE = 50;
+import { DataTablePagination } from '@/components/common/DataTablePagination';
 
 const LeadsPage = () => {
   const queryClient = useQueryClient();
@@ -47,6 +46,7 @@ const LeadsPage = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }]);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [isBulkActionModalOpen, setIsBulkActionModalOpen] = useState(false);
   const [currentBulkAction, setCurrentBulkAction] = useState<BulkActionType | null>(null);
   const [columnVisibility, setColumnVisibility] = useLocalStorage<ColumnVisibilityState>('leads-column-visibility', {
@@ -79,26 +79,22 @@ const LeadsPage = () => {
   const {
     data,
     error,
-    fetchNextPage,
-    hasNextPage,
     isFetching,
-    isFetchingNextPage,
+    isLoading,
     status,
-  } = useInfiniteQuery({
-    queryKey: ['leads', debouncedFilters, sorting, debouncedSearchTerm],
-    queryFn: async ({ pageParam = 0 }) => {
+  } = useQuery({
+    queryKey: ['leads', debouncedFilters, sorting, debouncedSearchTerm, pagination],
+    queryFn: async () => {
       let query = supabase
         .from('leads')
         .select(`*, responsavel:profiles(full_name), tags(id, nome)`, { count: 'exact' })
         .order(sorting[0]?.id || 'created_at', { ascending: !(sorting[0]?.desc ?? true) })
-        .range(pageParam * LEADS_PER_PAGE, (pageParam + 1) * LEADS_PER_PAGE - 1);
+        .range(pagination.pageIndex * pagination.pageSize, (pagination.pageIndex + 1) * pagination.pageSize - 1);
 
-      // Apply global search term
       if (debouncedSearchTerm) {
         query = query.or(`nome.ilike.%${debouncedSearchTerm}%,empresa.ilike.%${debouncedSearchTerm}%,nicho.ilike.%${debouncedSearchTerm}%`);
       }
 
-      // Apply advanced filters
       if (debouncedFilters.status?.length) query = query.in('status', debouncedFilters.status);
       if (debouncedFilters.nicho?.length) query = query.in('nicho', debouncedFilters.nicho);
       if (debouncedFilters.responsavel_id?.length) query = query.in('responsavel_id', debouncedFilters.responsavel_id);
@@ -119,28 +115,23 @@ const LeadsPage = () => {
       if (error) throw error;
       return { data, count };
     },
-    getNextPageParam: (lastPage, allPages) => {
-      const loadedCount = allPages.flatMap(p => p.data).length;
-      return lastPage.count && loadedCount < lastPage.count ? allPages.length : undefined;
-    },
-    initialPageParam: 0,
   });
 
-  const leads = useMemo(() => data?.pages.flatMap(page => page.data) ?? [], [data]);
+  const leads = useMemo(() => data?.data ?? [], [data]);
+  const pageCount = useMemo(() => {
+    return data?.count ? Math.ceil(data.count / pagination.pageSize) : 0;
+  }, [data?.count, pagination.pageSize]);
 
   const handleStatusChange = (leadId: string, newStatus: string) => {
     const oldStatus = leads.find(l => l.id === leadId)?.status;
     
-    queryClient.setQueryData(['leads', debouncedFilters, sorting], (oldData: any) => {
+    queryClient.setQueryData(['leads', debouncedFilters, sorting, pagination], (oldData: any) => {
       if (!oldData) return oldData;
       return {
         ...oldData,
-        pages: oldData.pages.map((page: any) => ({
-          ...page,
-          data: page.data.map((lead: Lead) =>
-            lead.id === leadId ? { ...lead, status: newStatus } : lead
-          ),
-        })),
+        data: oldData.data.map((lead: Lead) =>
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        ),
       };
     });
 
@@ -166,14 +157,16 @@ const LeadsPage = () => {
   const table = useReactTable({
     data: leads,
     columns,
+    pageCount: pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
     manualPagination: true,
     manualSorting: true,
-    state: { sorting, rowSelection, columnVisibility },
+    state: { sorting, rowSelection, columnVisibility, pagination },
   });
 
   const selectedLeads = useMemo(() => Object.keys(rowSelection).map(index => table.getRowModel().rows[parseInt(index, 10)]?.original).filter(Boolean), [rowSelection, table.getRowModel().rows]);
@@ -224,21 +217,16 @@ const LeadsPage = () => {
         </div>
       </div>
 
-      {status === 'pending' ? (
+      {isLoading ? (
         <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : status === 'error' ? (
         <div className="text-destructive-foreground bg-destructive/20 p-4 rounded-md border border-destructive/30"><strong>Erro:</strong> {error.message}</div>
-      ) : leads.length === 0 ? (
+      ) : leads.length === 0 && !isFetching ? (
         <EmptyState icon={<Users className="w-12 h-12" />} title="Nenhum lead encontrado" description="Nenhum lead corresponde aos filtros aplicados ou a base está vazia." cta={canManage ? { text: "Criar Novo Lead", onClick: () => navigate('/admin/leads/novo') } : undefined} />
       ) : (
         <>
           <LeadsDataTable table={table} />
-          <div className="flex justify-center mt-4">
-            <Button onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
-              {isFetchingNextPage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {hasNextPage ? 'Carregar mais' : 'Fim dos resultados'}
-            </Button>
-          </div>
+          <DataTablePagination table={table} />
         </>
       )}
 
