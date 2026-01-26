@@ -12,7 +12,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
-import { NICHOS } from '@/lib/constants';
 import { useDebounce } from '@/hooks/use-debounce';
 
 interface BulkDeleteDialogProps {
@@ -20,9 +19,10 @@ interface BulkDeleteDialogProps {
   onClose: () => void;
   onConfirm: (criteria: any, count: number) => void;
   users?: { id: string; full_name: string }[];
+  nichoOptions?: string[];
 }
 
-export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users }: BulkDeleteDialogProps) => {
+export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users, nichoOptions }: BulkDeleteDialogProps) => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [nicho, setNicho] = useState<string | undefined>();
   const [responsavelId, setResponsavelId] = useState<string | undefined>();
@@ -85,18 +85,13 @@ export const BulkDeleteDialog = ({ isOpen, onClose, onConfirm, users }: BulkDele
           <div className="space-y-2">
             <Label>Período de Criação</Label>
             <Popover>
-              <PopoverTrigger asChild>
-                <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}` : format(dateRange.from, "dd/MM/yyyy")) : <span>Selecione um período</span>}
-                </Button>
-              </PopoverTrigger>
+              <PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}` : format(dateRange.from, "dd/MM/yyyy")) : <span>Selecione um período</span>}</Button></PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start"><Calendar mode="range" selected={dateRange} onSelect={setDateRange} locale={ptBR} /></PopoverContent>
             </Popover>
           </div>
           <div className="space-y-2">
             <Label>Nicho</Label>
-            <Select onValueChange={(v) => setNicho(v === 'all' ? undefined : v)}><SelectTrigger><SelectValue placeholder="Todos os nichos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os nichos</SelectItem>{NICHOS.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent></Select>
+            <Select onValueChange={(v) => setNicho(v === 'all' ? undefined : v)}><SelectTrigger><SelectValue placeholder="Todos os nichos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os nichos</SelectItem>{nichoOptions?.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent></Select>
           </div>
           <div className="space-y-2">
             <Label>Responsável</Label>

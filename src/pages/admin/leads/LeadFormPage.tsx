@@ -23,6 +23,7 @@ import { PlaybookManager } from '@/components/leads/PlaybookManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import { exportToCsv } from '@/lib/exportUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { NICHOS } from '@/lib/constants';
 
 const statusOptions = [
   "Não contatado", "Primeiro contato feito", "Sem resposta",
@@ -96,8 +97,9 @@ const LeadFormPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from('leads').select('nicho');
       if (error) throw error;
-      const uniqueNichos = [...new Set(data.map(item => item.nicho).filter(Boolean))];
-      return uniqueNichos.map(n => ({ value: n, label: n }));
+      const dynamicNichos = data.map(item => item.nicho).filter(Boolean);
+      const allNichos = [...new Set([...NICHOS, ...dynamicNichos])].sort();
+      return allNichos.map(n => ({ value: n, label: n }));
     },
   });
 

@@ -25,6 +25,7 @@ import useLocalStorage from '@/hooks/useLocalStorage';
 import { LeadFilters } from '@/components/leads/LeadFilters';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Input } from '@/components/ui/input';
+import { NICHOS } from '@/lib/constants';
 
 const LEADS_PER_PAGE = 50;
 
@@ -69,8 +70,9 @@ const LeadsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from('leads').select('nicho');
       if (error) throw error;
-      const uniqueNichos = [...new Set(data.map(item => item.nicho).filter(Boolean))];
-      return uniqueNichos.map(n => ({ value: n, label: n, nome: n }));
+      const dynamicNichos = data.map(item => item.nicho).filter(Boolean);
+      const allNichos = [...new Set([...NICHOS, ...dynamicNichos])].sort();
+      return allNichos.map(n => ({ value: n, label: n, nome: n }));
     },
   });
 
@@ -245,7 +247,7 @@ const LeadsPage = () => {
       <LeadFilters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} filters={filters} setFilters={setFilters} users={users} allTags={allTags} nichoOptions={nichoOptions} />
       <ConvertLeadModal isOpen={isConvertModalOpen} onClose={() => { setIsConvertModalOpen(false); setSelectedLead(null); }} leadId={selectedLead?.id || null} leadName={selectedLead?.nome || null} />
       <LeadImportDialog isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
-      <BulkDeleteDialog isOpen={isBulkDeleteModalOpen} onClose={() => setIsBulkDeleteModalOpen(false)} onConfirm={handleConfirmBulkDelete} users={users} />
+      <BulkDeleteDialog isOpen={isBulkDeleteModalOpen} onClose={() => setIsBulkDeleteModalOpen(false)} onConfirm={handleConfirmBulkDelete} users={users} nichoOptions={nichoOptions.map(n => n.value)} />
       <BulkActionDialog isOpen={isBulkActionModalOpen} onClose={() => setIsBulkActionModalOpen(false)} actionType={currentBulkAction} leadCount={selectedLeads.length} onConfirm={handleConfirmBulkAction} users={users} statusOptions={["Não contatado", "Primeiro contato feito", "Sem resposta", "Em conversa", "Follow-up agendado", "Não interessado", "Convertido"]} nichoOptions={nichoOptions} />
     </div>
   );
