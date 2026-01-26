@@ -149,9 +149,6 @@ const LeadsPage = () => {
         queryClient.setQueryData(queryKey, context.previousData);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
-    },
   });
 
   const handleStatusChange = (leadId: string, newStatus: string) => {
