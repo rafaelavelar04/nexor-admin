@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import { SessionProvider } from "./contexts/SessionContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ActionManagerProvider } from "./contexts/ActionManagerContext";
+import { CacheManagerProvider } from "./contexts/CacheManagerContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminLayout from "./components/layouts/AdminLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -44,6 +45,7 @@ const queryClient = new QueryClient({
       cacheTime: config.queryClientConfig.cacheTime,
       refetchOnMount: config.queryClientConfig.refetchOnMount,
       refetchOnWindowFocus: config.queryClientConfig.refetchOnWindowFocus,
+      refetchOnReconnect: config.queryClientConfig.refetchOnReconnect,
     },
   },
 });
@@ -56,48 +58,50 @@ const App = () => (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <SessionProvider>
           <ActionManagerProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="leads/novo" element={<LeadFormPage />} />
-                    <Route path="leads/:id" element={<LeadFormPage />} />
-                    <Route path="opportunities" element={<Opportunities />} />
-                    <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="webhooks/:id/logs" element={<WebhookLogsPage />} />
-                    <Route path="metas" element={<GoalsPage />} />
-                    <Route path="companies" element={<CompaniesPage />} />
-                    <Route path="companies/novo" element={<CompanyFormPage />} />
-                    <Route path="companies/:id" element={<CompanyFormPage />} />
-                    <Route path="activities" element={<ActivitiesPage />} />
-                    <Route path="reports" element={<ReportsPage />} />
-                    <Route path="insights" element={<InsightsPage />} />
-                    <Route path="forecast" element={<ForecastPage />} />
-                    <Route path="financeiro" element={<FinancePage />} />
-                    <Route path="financeiro/:id" element={<ContractDetailPage />} />
-                    <Route path="onboarding" element={<OnboardingPage />} />
-                    <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
-                    <Route path="suporte" element={<SupportPage />} />
-                    <Route path="suporte/novo" element={<TicketFormPage />} />
-                    <Route path="suporte/:id" element={<TicketFormPage />} />
-                    <Route path="alertas" element={<AlertsPage />} />
-                    <Route path="parceiros" element={<PartnersPage />} />
-                    <Route path="parceiros/novo" element={<PartnerFormPage />} />
-                    <Route path="parceiros/:id" element={<PartnerFormPage />} />
-                    <Route path="alocacoes" element={<AssignmentsPage />} />
+            <CacheManagerProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                      <Route path="dashboard" element={<DashboardPage />} />
+                      <Route path="leads" element={<LeadsPage />} />
+                      <Route path="leads/novo" element={<LeadFormPage />} />
+                      <Route path="leads/:id" element={<LeadFormPage />} />
+                      <Route path="opportunities" element={<Opportunities />} />
+                      <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="webhooks/:id/logs" element={<WebhookLogsPage />} />
+                      <Route path="metas" element={<GoalsPage />} />
+                      <Route path="companies" element={<CompaniesPage />} />
+                      <Route path="companies/novo" element={<CompanyFormPage />} />
+                      <Route path="companies/:id" element={<CompanyFormPage />} />
+                      <Route path="activities" element={<ActivitiesPage />} />
+                      <Route path="reports" element={<ReportsPage />} />
+                      <Route path="insights" element={<InsightsPage />} />
+                      <Route path="forecast" element={<ForecastPage />} />
+                      <Route path="financeiro" element={<FinancePage />} />
+                      <Route path="financeiro/:id" element={<ContractDetailPage />} />
+                      <Route path="onboarding" element={<OnboardingPage />} />
+                      <Route path="onboarding/:id" element={<OnboardingDetailPage />} />
+                      <Route path="suporte" element={<SupportPage />} />
+                      <Route path="suporte/novo" element={<TicketFormPage />} />
+                      <Route path="suporte/:id" element={<TicketFormPage />} />
+                      <Route path="alertas" element={<AlertsPage />} />
+                      <Route path="parceiros" element={<PartnersPage />} />
+                      <Route path="parceiros/novo" element={<PartnerFormPage />} />
+                      <Route path="parceiros/:id" element={<PartnerFormPage />} />
+                      <Route path="alocacoes" element={<AssignmentsPage />} />
+                    </Route>
                   </Route>
-                </Route>
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </CacheManagerProvider>
           </ActionManagerProvider>
         </SessionProvider>
       </ThemeProvider>

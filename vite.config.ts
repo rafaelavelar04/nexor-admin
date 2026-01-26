@@ -11,10 +11,10 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate', // Atualiza automaticamente em segundo plano
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
+        skipWaiting: true, // Ativa o novo service worker imediatamente
+        clientsClaim: true, // Assume o controle da página imediatamente
       },
       devOptions: {
         enabled: true,

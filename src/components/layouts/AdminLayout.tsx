@@ -3,7 +3,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck
+  LayoutDashboard, Users, Briefcase, Building, ClipboardList, BarChart, Settings, LogOut, Menu, X, Target, DollarSign, ClipboardCheck, LifeBuoy, Sun, Moon, Bell, Lightbulb, ChevronsLeft, Telescope, Handshake, UserCheck, RefreshCw
 } from "lucide-react";
 import { useState, useRef } from "react";
 import {
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PwaUpdater } from "../common/PwaUpdater";
 import { config } from "@/config";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useCacheManager } from "@/contexts/CacheManagerContext";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -41,6 +42,7 @@ const settingsNavItems = [
 const AdminLayout = () => {
   const { user, profile, logout } = useSession();
   const { setTheme } = useTheme();
+  const { hardRefresh } = useCacheManager();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useLocalStorage('sidebar-collapsed', false);
   const mainScrollRef = useRef<HTMLElement>(null);
@@ -157,6 +159,9 @@ const AdminLayout = () => {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={hardRefresh} className="text-muted-foreground hover:text-foreground">
+              <RefreshCw className="w-5 h-5" />
+            </Button>
             <Link to="/admin/alertas" className="relative text-muted-foreground hover:text-foreground">
               <Bell className="w-6 h-6" />
               {unreadAlertsCount > 0 && (

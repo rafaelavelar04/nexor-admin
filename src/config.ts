@@ -25,10 +25,11 @@ const featureFlags = {
  * Ajuste os tempos de cache para otimizar a performance.
  */
 const queryClientConfig = {
-  staleTime: 1000 * 60 * 5, // 5 minutos
-  cacheTime: 1000 * 60 * 30, // 30 minutos
+  staleTime: 1000 * 60 * 60 * 24, // 24 horas. Dados são considerados "novos" por um dia inteiro.
+  cacheTime: 1000 * 60 * 60 * 24, // 24 horas. Mantém dados inativos em memória por mais tempo.
   refetchOnMount: false,
   refetchOnWindowFocus: false,
+  refetchOnReconnect: false, // Impede refetch ao reconectar à internet.
 };
 
 export const config = {
